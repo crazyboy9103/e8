@@ -2,6 +2,8 @@ import argparse
 parser = argparse.ArgumentParser(description='plot predictions on imgs of all classes')
 parser.add_argument('--conf', default=0.5, type=float,help='confidence threshold')
 parser.add_argument('--num', default=1, type=int, help='total number of plots for each label')
+parser.add_argument('--data', default="ssd_data.pt", type=str, help="dataset.pt filename")
+parser.add_argument('--model', default="ssd_model_10.pt", type=str, help="ssd_model.pt filename")
 args = parser.parse_args()
 confidence = args.conf
 num = args.num
@@ -48,19 +50,19 @@ import matplotlib.pyplot as plt
 from torchvision.utils import draw_bounding_boxes
 import random
 
-saved_datasets = [file for file in os.listdir() if file.endswith(".pt") and "dataset" in file]
-saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
-most_recent_dataset = saved_datasets[-1]
+#saved_datasets = [file for file in os.listdir() if file.endswith(".pt") and "dataset" in file]
+#saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
+#most_recent_dataset = saved_datasets[-1]
 
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", most_recent_dataset)
+dataset = CustomDataset("any_name", args.data)
 N = len(dataset.images) # size of dataset
 
-saved_models = [file for file in os.listdir() if file.endswith(".pt") and "ssd" in file]
-saved_models = sorted(saved_models, key=lambda filename:int(filename.strip("ssd_model_").strip(".pt")))
-most_recent_model = "ssd_model_125.pt"#saved_models[-1]
-print(f"evaluate {most_recent_model} with {most_recent_dataset}")
+#saved_models = [file for file in os.listdir() if file.endswith(".pt") and "ssd" in file]
+#saved_models = sorted(saved_models, key=lambda filename:int(filename.strip("ssd_model_").strip(".pt")))
+#most_recent_model = "ssd_model_125.pt"#saved_models[-1]
+print(f"evaluate {args.model} with {args.data}")
 
-model = Model(num_classes=dataset.num_classes, device = "cpu", parallel = False, model_name=most_recent_model,  batch_size=1)
+model = Model(num_classes=dataset.num_classes, device = "cpu", parallel = False, model_name=args.model,  batch_size=1)
 
 for it in range(num):
     

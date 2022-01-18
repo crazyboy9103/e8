@@ -1,4 +1,5 @@
 from MRCNN import *
+import argparse
 
 class MyModel(Model):
     def test(self, dataset):
@@ -6,7 +7,16 @@ class MyModel(Model):
         evaluate(self.model, 1, testloader, device=self.device)
 
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", "dataset_1230.pt")
-myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = "mrcnn_model_75.pt", batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
-myModel.test(dataset)
+if __name__ =="__main__":
+    parser = argparse.ArgumentParser(description="test model")
+    parser.add_argument("--dir", default="/dataset", type=str, help="path to the dataset folder")
+    parser.add_argument("--data", default="mrcnn_data.pt", type=str, help="dataset name to create OR load")
+    parser.add_argument("--model", default="mrcnn_model_10.pt", type=str, help="model name to test")
+    parser.add_argument("--batch", default=8, type=int, help="the batch size")
+
+    args = parser.parse_args()
+    
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
+    dataset = CustomDataset(args.dir, args.data)
+    myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=args.batch, parallel=False)
+    myModel.test(dataset)
