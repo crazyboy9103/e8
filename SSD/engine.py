@@ -68,7 +68,7 @@ def evaluate(model, epoch, data_loader, device):
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
-    logs = {}
+
     maskIOUs = {}
     IOUs = {}
     APs = {}
@@ -81,44 +81,21 @@ def evaluate(model, epoch, data_loader, device):
             boxes = pred['boxes'].detach().cpu()
             labels = pred['labels'].detach().cpu()
             scores = pred['scores'].detach().cpu()
-            image_id = pred['image_id'].detach().cpu()
 
             if len(labels) == 0: # if no label, nothing to evaluate
                 continue
 
-            if image_id in logs:
-                pass
-            else:
-                logs[image_id] = {}
-            
+           
             target = targets[i]
             gt_boxes = target['boxes']
             gt_labels = target['labels']
             gt_label = gt_labels[0].item()
             class_name = decode[gt_label]
-            if class_name in logs[image_id]:
-                pass
-            else:
-                logs[image_id][class_name] = {}
-                logs[image_id][class_name]["gt_bbox"] = []
-                logs[image_id][class_name]['gt_label'] = []
-                logs[image_id][class_name]['label'] = []
-                logs[image_id][class_name]['bbox'] = []
-                logs[image_id][class_name]['conf'] = []
-
-            for label in gt_labels:
-                logs[image_id][class_name]['gt_label'].append(decode[label.item()])
-            
-            for box in gt_boxes:
-                logs[image_id][class_name]["gt_bbox"].append(box.tolist())
-
+           
             pred_result = {}
             for j, label in enumerate(labels):
                 label = label.item()
-                logs[image_id][class_name]['label'].append(decode[label])
-                logs[image_id][class_name]['bbox'].append(boxes[j].tolist())
-                logs[image_id][class_name]['conf'].append(float(scores[j]))
-
+         
                 if label in pred_result:
                     pred_result[label]['scores'].append(float(scores[j]))
                     pred_result[label]['boxes'].append(boxes[j])
@@ -159,7 +136,6 @@ def evaluate(model, epoch, data_loader, device):
                     temp_iou = float(temp_iou)
                     if temp_iou > 0.3:
                         pred_classes.append(True)
-                        logs[image_id][class_name][j]["IOU"] = temp_iou
 
                         if label in IOUs:
                             IOUs[label].append(temp_iou)
@@ -168,17 +144,10 @@ def evaluate(model, epoch, data_loader, device):
                     else:
                         pred_classes.append(False)
 
-                #tp, fn, fp, tn = confusion_matrix([True for _ in range(len(pred_classes))], pred_classes).ravel()
-                
-                #logs[image_id][class_name][j]['tp'] = tp
-                #logs[image_id][class_name][j]['fp'] = fp
-                #logs[image_id][class_name][j]['fn'] = fn
-                #logs[image_id][class_name][j]['tn'] = tn
-
+  
                 AP = average_precision_score(pred_classes, output['scores'])
                 # if all pred_classes are False, AP is nan
                 if not np.isnan(AP):
-                    logs[image_id][class_name][j]["AP"] = AP
                     
                     if label in APs:
                         APs[label].append(AP)
@@ -199,8 +168,7 @@ def evaluate(model, epoch, data_loader, device):
                
                 else:
                     accs[label] = [acc]
-            if i == 0:
-                print(logs)
+
     mIOU = {decode[int(k)]:np.mean(v) for k, v in IOUs.items()}
     mAP = {decode[int(k)]:np.mean(v) for k, v in APs.items()}
     meanAcc = {decode[int(k)]:np.mean(v) for k, v in accs.items()}
@@ -210,9 +178,6 @@ def evaluate(model, epoch, data_loader, device):
     with open(f"metrics_{epoch}.json", "w") as f:
         json.dump(metrics, f)
     del metrics
-
-    with open(f"detailed_metrics_{epoch}.json", "w") as f:
-        json.dump(logs, f)
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()

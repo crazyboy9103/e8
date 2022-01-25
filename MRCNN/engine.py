@@ -69,7 +69,7 @@ def evaluate(model, epoch, data_loader, device):
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
-    logs = {}
+
     maskIOUs = {}
     IOUs = {}
     APs = {}
@@ -88,38 +88,18 @@ def evaluate(model, epoch, data_loader, device):
             if len(labels) == 0: # if no label, nothing to evaluate	
                 continue	
 
-            if image_id in logs:
-                pass
-            else:
-                logs[image_id] = {}
-
+          
             target = targets[i]
             gt_boxes = target['boxes']
             gt_labels = target['labels']
             gt_masks = target['masks']
             gt_label = gt_labels[0].item()
             class_name = decode[gt_label]
-            if class_name in logs[image_id]:
-                pass
-            else:
-                logs[image_id][class_name] = {}
-                logs[image_id][class_name]["gt_bbox"] = []
-                logs[image_id][class_name]['gt_label'] = []
-                logs[image_id][class_name]['label'] = []
-                logs[image_id][class_name]['bbox'] = []
-                logs[image_id][class_name]['conf'] = []
-            for label in gt_labels:
-                logs[image_id][class_name]['gt_label'].append(decode[label.item()])
-            
-            for box in gt_boxes:
-                logs[image_id][class_name]["gt_bbox"].append(box.tolist())
+ 
             
             pred_result = {}
             for j, label in enumerate(labels):
                 label = label.item()
-                logs[image_id][class_name]['label'].append(decode[label])
-                logs[image_id][class_name]['bbox'].append(boxes[j].tolist())
-                logs[image_id][class_name]['conf'].append(float(scores[j]))
 
                 if label in pred_result:
                     pred_result[label]['scores'].append(float(scores[j]))
@@ -127,22 +107,7 @@ def evaluate(model, epoch, data_loader, device):
                     pred_result[label]['masks'].append(masks[j])
                 else:
                     pred_result[label]={'scores':[float(scores[j])], 'boxes':[boxes[j]], 'masks':[masks[j]]}
-            """
-            n1, n2 = len(logs[image_id][class_name]['gt_label']), len(logs[image_id][class_name]['label'])
-            if n1 < n2:
-                logs[image_id][class_name]['label'] = logs[image_id][class_name]['labels'][:n1]
-                logs[image_id][class_name]['conf'] = logs[image_id][class_name]['conf'][:n1]
-            else:
-                for _ in range(n1-n2):
-                    logs[image_id][class_name]['label'].append("nothing")
-                    logs[image_id][class_name]['conf'].append(0)
             
-            tp, fn, fp, tn = confusion_matrix(logs[image_id][class_name]['gt_label'], logs[image_id][class_name]['label']).ravel()
-            logs[image_id][class_name]['tn'] = tn
-            logs[image_id][class_name]['fp'] = fp
-            logs[image_id][class_name]['fn'] = fn
-            logs[image_id][class_name]['tp'] = tp
-            """
 
             for label, output in pred_result.items():
                 N = len(output['scores'])
@@ -176,7 +141,6 @@ def evaluate(model, epoch, data_loader, device):
                     temp_iou = float(temp_iou)
                     if temp_iou > 0.3:
                         pred_classes.append(True)
-                        logs[image_id][class_name][j]["IOU"] = temp_iou
                         if label in IOUs:
                             IOUs[label].append(temp_iou)
                         else:
@@ -187,7 +151,6 @@ def evaluate(model, epoch, data_loader, device):
 
                 AP = average_precision_score(pred_classes, output['scores'])
                 if not np.isnan(AP):
-                    logs[image_id][class_name][j]["AP"] = AP
                     if label in APs:
                         APs[label].append(AP)
                     else:
@@ -219,8 +182,6 @@ def evaluate(model, epoch, data_loader, device):
                            
                             else:
                                 maskIOUs[label] = [iou_score]
-            if i == 0:
-                print(logs)
 
     mean_maskIOU = {decode[int(k)]:np.mean(v) for k, v in maskIOUs.items()}
     mIOU = {decode[int(k)]:np.mean(v) for k, v in IOUs.items()}
@@ -232,9 +193,7 @@ def evaluate(model, epoch, data_loader, device):
     with open(f"metrics_{epoch}.json", "w") as f:
         json.dump(metrics, f)
     del metrics
-    
-    with open(f"detailed_metrics_{epoch}.json", "w") as f:
-        json.dump(logs, f)
+
     
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
