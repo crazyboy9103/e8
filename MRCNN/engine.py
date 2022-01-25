@@ -6,11 +6,8 @@ import sys
 import time
 import numpy as np
 import torch
-import torchvision.models.detection.mask_rcnn
 import utils
-from coco_eval import CocoEvaluator
-from coco_utils import get_coco_api_from_dataset
-from sklearn.metrics import average_precision_score
+from sklearn.metrics import average_precision_score, confusion_matrix
 
 import json
 dic = json.load(open("dic.json","r"))
@@ -72,6 +69,7 @@ def evaluate(model, epoch, data_loader, device):
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
+    logs = {}
     maskIOUs = {}
     IOUs = {}
     APs = {}
@@ -85,27 +83,70 @@ def evaluate(model, epoch, data_loader, device):
             labels = pred['labels'].detach().cpu()
             scores = pred['scores'].detach().cpu()
             masks = pred['masks'].detach().cpu()
-            if len(labels) == 0:
-                continue
+            image_id = pred['image_id'].detach().cpu()
+
+            if len(labels) == 0: # if no label, nothing to evaluate	
+                continue	
+
+            if image_id in logs:
+                pass
+            else:
+                logs[image_id] = {}
+
             target = targets[i]
             gt_boxes = target['boxes']
             gt_labels = target['labels']
             gt_masks = target['masks']
-        
+            gt_label = gt_labels[0].item()
+            class_name = decode[gt_label]
+            if class_name in logs[image_id]:
+                pass
+            else:
+                logs[image_id][class_name] = {}
+                logs[image_id][class_name]["gt_bbox"] = []
+                logs[image_id][class_name]['gt_label'] = []
+                logs[image_id][class_name]['label'] = []
+                logs[image_id][class_name]['bbox'] = []
+                logs[image_id][class_name]['conf'] = []
+            for label in gt_labels:
+                logs[image_id][class_name]['gt_label'].append(decode[label.item()])
+            
+            for box in gt_boxes:
+                logs[image_id][class_name]["gt_bbox"].append(box.tolist())
+            
             pred_result = {}
             for j, label in enumerate(labels):
                 label = label.item()
+                logs[image_id][class_name]['label'].append(decode[label])
+                logs[image_id][class_name]['bbox'].append(boxes[j].tolist())
+                logs[image_id][class_name]['conf'].append(float(scores[j]))
+
                 if label in pred_result:
                     pred_result[label]['scores'].append(float(scores[j]))
                     pred_result[label]['boxes'].append(boxes[j])
                     pred_result[label]['masks'].append(masks[j])
                 else:
                     pred_result[label]={'scores':[float(scores[j])], 'boxes':[boxes[j]], 'masks':[masks[j]]}
-                    
+            """
+            n1, n2 = len(logs[image_id][class_name]['gt_label']), len(logs[image_id][class_name]['label'])
+            if n1 < n2:
+                logs[image_id][class_name]['label'] = logs[image_id][class_name]['labels'][:n1]
+                logs[image_id][class_name]['conf'] = logs[image_id][class_name]['conf'][:n1]
+            else:
+                for _ in range(n1-n2):
+                    logs[image_id][class_name]['label'].append("nothing")
+                    logs[image_id][class_name]['conf'].append(0)
+            
+            tp, fn, fp, tn = confusion_matrix(logs[image_id][class_name]['gt_label'], logs[image_id][class_name]['label']).ravel()
+            logs[image_id][class_name]['tn'] = tn
+            logs[image_id][class_name]['fp'] = fp
+            logs[image_id][class_name]['fn'] = fn
+            logs[image_id][class_name]['tp'] = tp
+            """
+
             for label, output in pred_result.items():
                 N = len(output['scores'])
-                temp_boxes = torch.zeros((N, 4))
-                
+                temp_boxes = torch.zeros((N, 4))                
                 temp_masks = torch.zeros((N, 480, 360), dtype=torch.bool)
 
                 for k, box in enumerate(output['boxes']):
@@ -116,22 +157,17 @@ def evaluate(model, epoch, data_loader, device):
                 pred_result[label]['boxes'] = temp_boxes
                 pred_result[label]['masks'] = temp_masks
                 
-            for label, output in pred_result.items():
+            for j, (label, output) in enumerate(pred_result.items()):
                 temp_boxes = [gt_box for gt_box, gt_label in zip(gt_boxes, gt_labels) if label == gt_label]
                 if not temp_boxes:
-                    #if label in IOUs:
-                    #    IOUs[label].append(0)
-                    #else:
-                    #    IOUs[label] = [0]
-                    
                     continue
                 
                 gt_label_boxes = torch.zeros((len(temp_boxes), 4))
-                for j, box in enumerate(temp_boxes):
-                    gt_label_boxes[j, :] = box
+                for k, box in enumerate(temp_boxes):
+                    gt_label_boxes[k, :] = box
 
                 box_iou = torchvision.ops.box_iou(output['boxes'], gt_label_boxes)
-                #box_iou_d0, box_iou_d1 = torch.max(box_iou, dim=0), torch.max(box_iou, dim=1)
+
                 box_iou_d1 = torch.max(box_iou, dim=1)
                 pred_classes = []
                  
@@ -140,6 +176,7 @@ def evaluate(model, epoch, data_loader, device):
                     temp_iou = float(temp_iou)
                     if temp_iou > 0.3:
                         pred_classes.append(True)
+                        logs[image_id][class_name][j]["IOU"] = temp_iou
                         if label in IOUs:
                             IOUs[label].append(temp_iou)
                         else:
@@ -150,6 +187,7 @@ def evaluate(model, epoch, data_loader, device):
 
                 AP = average_precision_score(pred_classes, output['scores'])
                 if not np.isnan(AP):
+                    logs[image_id][class_name][j]["AP"] = AP
                     if label in APs:
                         APs[label].append(AP)
                     else:
@@ -181,7 +219,8 @@ def evaluate(model, epoch, data_loader, device):
                            
                             else:
                                 maskIOUs[label] = [iou_score]
-
+            if i == 0:
+                print(logs)
 
     mean_maskIOU = {decode[int(k)]:np.mean(v) for k, v in maskIOUs.items()}
     mIOU = {decode[int(k)]:np.mean(v) for k, v in IOUs.items()}
@@ -193,15 +232,10 @@ def evaluate(model, epoch, data_loader, device):
     with open(f"metrics_{epoch}.json", "w") as f:
         json.dump(metrics, f)
     del metrics
-
-    for k, v in mIOU.items():
-        metric_logger.update(mIOU=v, label=label_map[k])
-    for k, v in mAP.items():
-        metric_logger.update(mAP=v, label=label_map[k])
-    for k, v in meanAcc.items():
-        metric_logger.update(meanAcc=v, label=label_map[k])
-    for k, v in mean_maskIOU.items():
-        metric_logger.update(meanmaskIOU=v, label=label_map[k])
+    
+    with open(f"detailed_metrics_{epoch}.json", "w") as f:
+        json.dump(logs, f)
+    
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
-    print("Averaged stats:", metric_logger)
+

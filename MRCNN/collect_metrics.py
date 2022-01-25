@@ -38,13 +38,13 @@ for filename in metric_json:
             for diff in set(labels)-set(metrics.keys()):
                 #print(f"{diff} :  missing")
                 if metric_name  == "mIOU":
-                    data_miou[label].append(0)
+                    data_miou[diff].append(0)
                 elif metric_name == "mAP":
-                    data_map[label].append(0)
+                    data_map[diff].append(0)
                 elif metric_name =="meanAcc":
-                    data_macc[label].append(0)
+                    data_macc[diff].append(0)
                 elif metric_name == "mean_maskIOU":
-                    data_mmiou[label].append(0)
+                    data_mmiou[diff].append(0)
 
 #print(data_miou)
 def save_to_json(json_data,metric_name):
