@@ -185,11 +185,15 @@ def evaluate(model, image_names, epoch, data_loader, device):
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
 
-
+import argparse
+parser = argparse.ArgumentParser(description='test')
+parser.add_argument('--data', default="mrcnn_data.pt", type=str, help="dataset.pt filename")
+parser.add_argument('--model', default="mrcnn_model_75.pt", type=str, help="mrcnn_model.pt filename")
+args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", "dataset_1230.pt")
+dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", args.data)
 #dataset.labels = {i:dataset.labels[i] for i in range(120)}
 #dataset.images = {i:dataset.images[i] for i in range(120)}
-myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = "mrcnn_model_75.pt", batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
+myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)
