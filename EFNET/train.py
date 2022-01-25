@@ -3,6 +3,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 import argparse
+import json
 
 transforms = transforms.Compose([
     transforms.ToTensor(),
@@ -10,8 +11,8 @@ transforms = transforms.Compose([
 ])
 labels = {i:"" for i in range(10)}
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
-parser.add_argument("--train", default="../dataset/train", type=str, help="train folder")
-parser.add_argument("--test", default="../dataset/test", type=str, help="test folder")
+parser.add_argument("--train", default="dataset/train", type=str, help="train folder")
+parser.add_argument("--test", default="dataset/test", type=str, help="test folder")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to save")
 args = parser.parse_args()
 trainset = ImageFolder(root=args.train, transform=transforms, target_transform=None)
@@ -21,7 +22,8 @@ print(trainset.classes)
 
 from torch.utils.data import DataLoader
 trainloader = DataLoader(trainset, batch_size=4, shuffle=True, pin_memory=True, num_workers=4)
-testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
+testloader = DataLoader(testset, batch_size=4, shuffle=False, pin_memory=True, num_workers=4)
+allFiles, _ = map(list, zip(*testloader.dataset.samples))
 
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -29,6 +31,10 @@ import torchvision.models as models
 import time
 import torch.optim as optim
 import copy
+
+from sklearn.metrics import f1_score
+
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def build_net(num_classes):
     net = models.efficientnet_b0(pretrained=True)
@@ -81,30 +87,59 @@ def train_model(model, criterion, optimizer, num_epochs=25):
             # statistics
             running_loss += loss.item() * inputs.size(0)
             running_corrects += torch.sum(preds == labels.data)
+            current_f1_score = f1_score(labels.data, preds)
 
             epoch_loss = running_loss / len(trainset)
             epoch_acc = running_corrects.double() / len(trainset)
 
-            print('Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-
+            print('Loss: {:.4f} Acc: {:.4f} F1 Score: {:.4f}'.format(epoch_loss, epoch_acc, current_f1_score))
             # deep copy the model
             if epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-
-        print()
-
-    time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(
-        time_elapsed // 60, time_elapsed % 60))
-    print('Best val Acc: {:4f}'.format(best_acc))
-
     # load best model weights
     model.load_state_dict(best_model_wts)
     return model
+
+def test_model(model):
+    logs = {}
+    model.eval()
+
+    total_f1_score = 0.0
+    total_acc = 0.0
+    counts = 0
+    for i, (inputs, labels) in enumerate(testloader):
+        counts += 1
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+       
+        # forward
+        # track history if only in train
+        with torch.set_grad_enabled(False):
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            for j in range(inputs.size()[0]):
+                pred = preds[j]
+                #현재 파일에 대한 파일경로
+                logs[allFiles[i * 4 + j]] = {"pred":pred, "true", labels[j]}
+
+        # statistics
+        running_corrects += torch.sum(preds == labels.data)
+
+        current_f1_score = f1_score(labels.data, preds)
+        total_f1_score += current_f1_score
+
+        epoch_acc = running_corrects.double() / len(testset)
+        total_acc += epoch_acc
+        print('Acc: {:.4f} F1 Score: {:.4f}'.format(epoch_acc, current_f1_score))
+
+    json.dump(logs, open("efnet_logs.json", "w"))
+    print('Final average Acc and F1: {:4f} {:4f}'.format(total_acc/counts, total_f1_score/counts))
+    return model
 #%% 
 model = train_model(model=net, criterion=criterion, optimizer=optimizer, num_epochs=25)
+model = test_model(model)
 print('Finished Training')
-#PATH = './eff_net.pth' 
 PATH = args.model
 torch.save(model.state_dict(), PATH)
