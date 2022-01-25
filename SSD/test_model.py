@@ -167,13 +167,15 @@ def evaluate(model, image_names, epoch, data_loader, device):
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
 
-
+import argparse
+parser = argparse.ArgumentParser(description='test')
+parser.add_argument('--data', default="ssd_data.pt", type=str, help="dataset.pt filename")
+parser.add_argument('--model', default="ssd_model_110.pt", type=str, help="ssd_model.pt filename")
+args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", "dataset_1230.pt")
-#dataset.labels = {i:dataset.labels[i] for i in range(128)}
-#dataset.images = {i:dataset.images[i] for i in range(128)}
-myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = "ssd_model_110.pt", batch_size=128, parallel=False) # if there is no ckpt to load, pass model_name=None 
+dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", args.data)
+#dataset.labels = {i:dataset.labels[i] for i in range(120)}
+#dataset.images = {i:dataset.images[i] for i in range(120)}
+myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=128, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)
-
-

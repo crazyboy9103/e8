@@ -4,7 +4,7 @@ parser = argparse.ArgumentParser(description='plot predictions on imgs of all cl
 parser.add_argument('--conf', default=0.5, type=float,help='confidence threshold')
 parser.add_argument('--num', default=1, type=int, help='total number of plots for each label')
 parser.add_argument('--data', default="mrcnn_data.pt", type=str, help="dataset.pt filename")
-parser.add_argument('--model', default="mrcnn_model_10.pt", type=str, help="mrcnn_model.pt filename")
+parser.add_argument('--model', default="mrcnn_model_75.pt", type=str, help="mrcnn_model.pt filename")
 args = parser.parse_args()
 confidence = args.conf
 num = args.num
