@@ -8,8 +8,8 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 RUN apt-get update -y
 
 RUN apt-get update -y \
- && apt-get install -y apt-utils git curl wget ca-certificates bzip2 cmake vim tree htop bmon iotop g++ libgl1-mesa-glx \
- && apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender-dev
+ && apt-get install -y apt-utils git curl wget ca-certificates bzip2 cmake vim tree htop bmon iotop g++ \
+ && apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1-mesa-glx 
 
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
 && chmod +x /Miniconda3-latest-Linux-x86_64.sh \

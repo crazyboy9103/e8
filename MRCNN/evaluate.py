@@ -3,6 +3,8 @@ from re import S
 parser = argparse.ArgumentParser(description='plot predictions on imgs of all classes')
 parser.add_argument('--conf', default=0.5, type=float,help='confidence threshold')
 parser.add_argument('--num', default=1, type=int, help='total number of plots for each label')
+parser.add_argument('--data', default="mrcnn_data.pt", type=str, help="dataset.pt filename")
+parser.add_argument('--model', default="mrcnn_model_10.pt", type=str, help="mrcnn_model.pt filename")
 args = parser.parse_args()
 confidence = args.conf
 num = args.num
@@ -37,18 +39,18 @@ import matplotlib.pyplot as plt
 import random
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 
-saved_datasets = [file for file in os.listdir() if file.endswith(".pt") and "dataset" in file]
-saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
-most_recent_dataset = saved_datasets[-1]
+#saved_datasets = [file for file in os.listdir() if file.endswith(".pt") and "dataset" in file]
+#saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
+#most_recent_dataset = saved_datasets[-1]
 
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", most_recent_dataset)
+dataset = CustomDataset("any_name", args.data)
 N = len(dataset.images) # size of dataset
 
-saved_models = [file for file in os.listdir() if file.endswith(".pt") and "mrcnn" in file]
-saved_models = sorted(saved_models, key=lambda filename:int(filename.strip("mrcnn_model_").strip(".pt")))
-most_recent_model = saved_models[-1]
-print(f"evaluate {most_recent_model} with {most_recent_dataset}")
-model = Model(num_classes=dataset.num_classes, device = "cpu", parallel = False, model_name=most_recent_model,  batch_size=8)
+#saved_models = [file for file in os.listdir() if file.endswith(".pt") and "mrcnn" in file]
+#saved_models = sorted(saved_models, key=lambda filename:int(filename.strip("mrcnn_model_").strip(".pt")))
+#most_recent_model = saved_models[-1]
+print(f"evaluate {args.model} with {args.data}")
+model = Model(num_classes=dataset.num_classes, device = "cpu", parallel = False, model_name=args.model,  batch_size=8)
 
 for it in range(num):
     
