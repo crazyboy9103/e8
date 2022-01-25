@@ -4,7 +4,7 @@ import argparse
 def main(args):
     data_dir = args.dir #"/dataset"
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')     
-    dataset = CustomDataset(data_dir, data_dir + "/" + args.data)
+    dataset = CustomDataset(data_dir, args.data)
     model = Model(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=args.batch, parallel=False) # if there is no ckpt to load, pass model_name=None 
     model.fit(dataset, max_epochs=args.epoch)
 
