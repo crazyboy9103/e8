@@ -11,7 +11,7 @@ if __name__ =="__main__":
     parser = argparse.ArgumentParser(description="test model")
     parser.add_argument("--dir", default="/dataset", type=str, help="path to the dataset folder")
     parser.add_argument("--data", default="mrcnn_data.pt", type=str, help="dataset name to create OR load")
-    parser.add_argument("--model", default="mrcnn_model_10.pt", type=str, help="model name to test")
+    parser.add_argument("--model", default="mrcnn_model_75.pt", type=str, help="model name to test")
     parser.add_argument("--batch", default=8, type=int, help="the batch size")
 
     args = parser.parse_args()

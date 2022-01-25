@@ -116,7 +116,7 @@ def process_dataset(data_dir):
                 info['labels'].append(label_map[label])
 
             if info['boxes']:
-                images.append(img)
+                images.append(img.strip(data_dir))
                 labels.append(info)
     temp_images = {i: img for i, img in enumerate(images)}
     temp_labels = {i: label for i, label in enumerate(labels)}
@@ -142,7 +142,8 @@ class CustomDataset(Dataset):
         assert data_name.endswith(".pt"), "data_name must end with .pt"
         try:
             self.load(data_name)
-            print(f"Data loaded from {data_name}")
+            self.dir = data_dir
+            print(f"Data loaded from {data_name} from directory {data_dir}")
             self.transform = transform # override transform to apply augmentation
         except:
             print(f"Error loading {data_name}, processing data from {data_dir}")     
@@ -185,7 +186,6 @@ class CustomDataset(Dataset):
     
     def save(self, data_name):
         temp = {
-            "dir":self.dir,
             "transform":self.transform,
             "images":self.images,
             "labels":self.labels,
@@ -197,7 +197,6 @@ class CustomDataset(Dataset):
 
     def load(self, data_name): 
         temp = torch.load(data_name)
-        self.dir = temp["dir"]
         self.transform = temp["transform"]
         self.images = temp["images"]
         self.labels = temp["labels"]
