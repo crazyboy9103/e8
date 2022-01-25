@@ -236,7 +236,7 @@ class Model(Module):
         self.device = device
         self.start_epoch = 0
         
-        saved_models = [file for file in os.listdir() if file.endswith(".pt") and "ssd" in file]
+        saved_models = [file for file in os.listdir() if file.endswith(".pt") and "ssd_model" in file]
         
         if model_name in os.listdir(): # if model name is found
             self.load(model_name)
