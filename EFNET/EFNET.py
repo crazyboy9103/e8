@@ -28,8 +28,8 @@ example root_dir
     | --- rabbit/
     |      |--...
 """
-train_dir = '../dataset/train'
-test_dir  = '../dataset/val'
+train_dir = 'dataset/train'
+test_dir  = 'dataset/val'
 
 trainset = ImageFolder(root=train_dir, transform=transforms, target_transform=None)
 testset = ImageFolder(root=test_dir, transform=transforms, target_transform=None)
