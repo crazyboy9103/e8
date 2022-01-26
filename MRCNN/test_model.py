@@ -19,8 +19,7 @@ def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
     utc_timestamp = int(time.time() + timezone)
-    date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %
-H:%M:%S')
+    date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return utc_timestamp
 def evaluate(model, image_names, epoch, data_loader, device):
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')    
