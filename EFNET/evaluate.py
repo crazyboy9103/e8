@@ -8,9 +8,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn as nn 
 import argparse
-
+def getTimestamp():
+    import time, datetime
+    timezone = 60*60*9 # seconds * minutes * utc + 9
+    utc_timestamp = int(time.time() + timezone)
+    date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    return utc_timestamp
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to load from")
+parser.add_argument("--batch", default=1, type=int, help="batch size")
 args = parser.parse_args()
 
 transforms = transforms.Compose([
@@ -20,7 +26,7 @@ transforms = transforms.Compose([
 
 test_dir  = '../dataset/val'
 testset = ImageFolder(root=test_dir, transform=transforms, target_transform=None)
-testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
+testloader = DataLoader(testset, batch_size=args.batch, shuffle=False, pin_memory=True, num_workers=4)
 
 PATH = args.model
 dataiter = iter(testloader) 
@@ -41,22 +47,36 @@ def build_net(num_classes):
 
 net = build_net(len(testset.classes))
 net.load_state_dict(torch.load(PATH)) 
-outputs = net(images)
-_, predicted = torch.max(outputs, 1) 
-print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
+#outputs = net(images)
+#_, predicted = torch.max(outputs, 1) 
+#print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
 
+logs = {"start":getTimestamp()}
 
 correct = 0 
 total = 0 
 f1 = 0
+
 from sklearn.metrics import f1_score
+image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
-    for data in testloader: 
-        images, labels = data 
+    for batch_idx, (images, labels) in enumerate(testloader): 
         outputs = net(images) 
+        images_names = [image_names[j] for j in range(batch_idx * args.batch, (batch_idx + 1) * args.batch) if j < len(image_names)]
         _, predicted = torch.max(outputs.data, 1) 
+        for img_name, predict, label in zip(images_names, predicted, labels):
+            logs[img_name] = {"predict":predict.item(), "gt": label.item(), "correct":predict.item()==label.item()}
+            
         f1 += f1_score(labels.numpy(), predicted.numpy())
         total += labels.size(0) 
         correct += (predicted == labels).sum().item() 
         print('Accuracy of the network on the test images: %d %%' % ( 100 * correct / total))
         print("Average F1 score : %f %%" % (f1 / total))
+    
+    logs["stats"] = {"acc":correct / total, "f1": f1 / total}
+
+logs["end"] = getTimestamp()
+
+json.dump(logs, open("detailed_metrics.json", "w"))
+
+
