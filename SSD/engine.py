@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import utils
 from sklearn.metrics import average_precision_score, confusion_matrix
-
+import torchvision
 import json
 dic = json.load(open("dic.json","r"))
 label_map = json.load(open("labels.json", "r"))

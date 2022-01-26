@@ -148,8 +148,8 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
                 
     
-        if batch_idx == 0:
-            print(logs)
+        #if batch_idx == 0:
+        #    print(logs)
 
     mIOU = {decode[int(k)]:np.mean(v) for k, v in IOUs.items()}
     mAP = {decode[int(k)]:np.mean(v) for k, v in APs.items()}
@@ -174,7 +174,7 @@ parser.add_argument('--model', default="ssd_model_110.pt", type=str, help="ssd_m
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", args.data)
+dataset = CustomDataset("/dataset", args.data)
 #dataset.labels = {i:dataset.labels[i] for i in range(120)}
 #dataset.images = {i:dataset.images[i] for i in range(120)}
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=128, parallel=False) # if there is no ckpt to load, pass model_name=None 

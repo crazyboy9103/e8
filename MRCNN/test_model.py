@@ -192,7 +192,7 @@ parser.add_argument('--model', default="mrcnn_model_75.pt", type=str, help="mrcn
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", args.data)
+dataset = CustomDataset("/dataset", args.data)
 #dataset.labels = {i:dataset.labels[i] for i in range(120)}
 #dataset.images = {i:dataset.images[i] for i in range(120)}
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
