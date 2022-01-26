@@ -36,7 +36,6 @@ def analysis(metrics):
                 logs[image_name][class_name]["conf"] = []
                 logs[image_name][class_name]["iou"] = []
                 logs[image_name][class_name]["correct"] = []
-                logs[image_name][class_name]["ap"] = []
                 
             gt_bbox = stats['gt_bbox']
             gt_label = stats['gt_label']
@@ -55,52 +54,57 @@ def analysis(metrics):
                         logs[image_name][class_name]['conf'].append(conf[j])
                         logs[image_name][class_name]["iou"].append(iou)
                         
-                        if class_name not in ious:
-                            ious[class_name] = [iou]
-                        else:
-                            ious[class_name].append(iou)
                             
-            n = len(logs[image_name][class_name]["correct"])
-            if n != 0:
-                AP = average_precision_score(logs[image_name][class_name]["correct"], logs[image_name][class_name]['conf'])
 
-                if not np.isnan(AP):
-                    for _ in range(n):
-                        logs[image_name][class_name]['ap'].append(AP)
-                        
-                    if class_name not in aps:
-                        aps[class_name] = [AP]
-
-                    else:
-                        aps[class_name].append(AP)
-    for class_name, iou in ious.items():
-        print(f"mIoU for {class_name}: {np.mean(iou)}")
-
-    for class_name, ap in aps.items():
-        print(f"AP for {class_name}: {np.mean(ap)}")
 
     return logs
 
 def write_to_excel(metrics):
     from openpyxl import Workbook
-    miou = 0
-    counts = 0 
-
+    is_correct_by_class = {}
+    conf_by_class = {}
+    iou_by_class = {}
+    
     wb = Workbook()
     ws = wb.active
-    ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou", "ap"])
+    ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou", "cumul_average_iou", "cumul_average_ap"])
     for image_name, result in analysis(metrics).items():
         for class_name, stats in result.items():
+            if class_name not in is_correct_by_class:
+                is_correct_by_class[class_name] = []
+
+            if class_name not in conf_by_class:
+                conf_by_class[class_name] = []
+
+            if class_name not in iou_by_class:
+                iou_by_class[class_name] = []
+
             for i in range(len(stats['label'])):
                 try:
-                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_bbox'][i]), str(stats['label'][i]), str(stats['bbox'][i]), str(stats['conf'][i]), str(stats['iou'][i]), str(stats['ap'][i])])
+                    is_correct_by_class[class_name].append(stats['correct'][i])
+                    conf_by_class[class_name].append(stats["conf"][i])
+                    iou_by_class[class_name].append(stats["iou"][i])
+                    cumul_average_iou = np.mean(iou_by_class[class_name])
+                    cumul_average_ap = average_precision_score(is_correct_by_class[class_name], conf_by_class[class_name])
+                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_bbox'][i]), str(stats['label'][i]), str(stats['bbox'][i]), str(stats['conf'][i]), str(stats['iou'][i]), str(cumul_average_iou), str(cumul_average_ap)])
                 except:
                     continue
-            average_iou = np.mean(stats["iou"])
-            if not np.isnan(average_iou):
-                miou += average_iou
-                counts += 1
-
+            
+    mAP = 0
+    mIoU = 0
+    count = 0
+    for class_name in is_correct_by_class:
+        is_cor = is_correct_by_class[class_name]
+        conf = conf_by_class[class_name]
+        ious = iou_by_class[class_name]
+        class_average_iou = np.mean(ious)
+        class_average_ap = average_precision_score(is_cor, conf)
+        print(f"Class: {class_name}, Average IoU: {class_average_iou}, Average Precision: {class_average_ap}")
+        mIoU += class_average_iou
+        mAP += class_average_ap
+        count += 1
+    print(f"Final mAP :{mAP/count}, Final mIoU : {mIoU/count}")
+    wb.save("/dataset/test.xlsx")
 
     wb.save("test.xlsx")
     print("mean iou", miou/counts)
