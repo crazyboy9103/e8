@@ -45,6 +45,14 @@ def build_net(num_classes):
 net = build_net(len(trainset.classes))
 net = net.to(device)
 
+import os
+if args.model in os.listdir():
+    try:
+        net.load_state_dict(torch.load(args.model))
+        print(f"model loaded from {args.model}")
+    except:
+        print("failed to load model, creating new one")
+        
 criterion = nn.CrossEntropyLoss() 
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
@@ -140,5 +148,4 @@ def test_model(model):
 model = train_model(model=net, criterion=criterion, optimizer=optimizer, num_epochs=25)
 model = test_model(model)
 print('Finished Training')
-PATH = args.model
-torch.save(model.state_dict(), PATH)
+torch.save(model.state_dict(), args.model)

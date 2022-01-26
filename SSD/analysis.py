@@ -21,6 +21,8 @@ metrics = json.load(open("/dataset/detailed_metrics.json", "r", encoding="utf-8"
 from sklearn.metrics import average_precision_score
 def analysis(metrics):
     logs = {}
+    
+    print(f"Eval started : {metrics['start']}, Eval ended : {metrics['end']}")
     for image_name, result in metrics.items():
         if image_name not in logs:
             logs[image_name] = {}

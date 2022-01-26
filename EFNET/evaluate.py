@@ -23,7 +23,7 @@ transforms = transforms.Compose([
     transforms.Resize((224, 224)) # H, W
 ])
 
-test_dir  = '../dataset/val'
+test_dir  = 'dataset/test'
 testset = ImageFolder(root=test_dir, transform=transforms, target_transform=None)
 testloader = DataLoader(testset, batch_size=1, shuffle=False, pin_memory=True, num_workers=4)
 

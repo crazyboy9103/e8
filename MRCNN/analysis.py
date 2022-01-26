@@ -22,6 +22,8 @@ from sklearn.metrics import average_precision_score
 def analysis(metrics):
     ious, aps = {}, {}
     logs = {}
+
+    print(f"Eval started : {metrics['start']}, Eval ended : {metrics['end']}")
     for image_name, result in metrics.items():
         if image_name not in logs:
             logs[image_name] = {}
