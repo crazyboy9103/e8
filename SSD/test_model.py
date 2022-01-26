@@ -16,14 +16,20 @@ class MyModel(Model):
     def test(self, dataset):
         testloader = DataLoader(dataset = dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         evaluate(self.model, dataset.images, 1, testloader, device=self.device)
-
+def getTimestamp():
+    import time, datetime
+    timezone = 60*60*9 # seconds * minutes * utc + 9
+    utc_timestamp = int(time.time() + timezone)
+    date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %
+H:%M:%S')
+    return utc_timestamp
 def evaluate(model, image_names, epoch, data_loader, device):
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')    
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
-    logs = {}
+    logs = {"start":getTimestamp()}
     IOUs = {}
     APs = {}
     accs = {}
@@ -150,7 +156,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
     
         #if batch_idx == 0:
         #    print(logs)
-
+    logs["end"]=getTimestamp()
     mIOU = {decode[int(k)]:np.mean(v) for k, v in IOUs.items()}
     mAP = {decode[int(k)]:np.mean(v) for k, v in APs.items()}
     meanAcc = {decode[int(k)]:np.mean(v) for k, v in accs.items()}

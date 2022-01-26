@@ -2,7 +2,7 @@ from SSD import *
 import json
 import os
 from tqdm import tqdm
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", "dataset_1230.pt")
+dataset = CustomDataset("/dataset", "ssd_data.pt")
 
 label_map = json.load(open("labels.json", "r"))
 

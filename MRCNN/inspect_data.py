@@ -1,6 +1,6 @@
 from MRCNN import *
 import json
-dataset = CustomDataset("/data/dataset/recsys/e8/data_1230", "dataset_1230.pt")
+dataset = CustomDataset("/dataset", "mrcnn_data.pt")
 
 label_map = json.load(open("labels.json", "r"))
 

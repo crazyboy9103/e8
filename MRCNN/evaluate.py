@@ -43,7 +43,7 @@ from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 #saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
 #most_recent_dataset = saved_datasets[-1]
 
-dataset = CustomDataset("any_name", args.data)
+dataset = CustomDataset("/dataset", args.data)
 N = len(dataset.images) # size of dataset
 
 #saved_models = [file for file in os.listdir() if file.endswith(".pt") and "mrcnn" in file]
