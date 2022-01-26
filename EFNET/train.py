@@ -108,7 +108,7 @@ def test_model(model):
     total_f1_score = 0.0
     total_acc = 0.0
     counts = 0
-    for i, (inputs, labels) in enumerate(testloader):
+    for batch_idx, (inputs, labels) in enumerate(testloader):
         counts += 1
         inputs = inputs.to(device)
         labels = labels.to(device)
@@ -119,10 +119,9 @@ def test_model(model):
             outputs = model(inputs)
             _, preds = torch.max(outputs, 1)
 
-            for j in range(inputs.size()[0]):
-                pred = preds[j]
+            for i in range(inputs.size()[0]):
                 #현재 파일에 대한 파일경로
-                logs[allFiles[i * 4 + j]] = {"pred":pred, "true", labels[j]}
+                logs[allFiles[batch_idx * 4 + i]] = {"pred":preds[i].item(), "true", labels[i].item()}
 
         # statistics
         running_corrects += torch.sum(preds == labels.data)
