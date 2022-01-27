@@ -83,7 +83,6 @@ def evaluate(model, epoch, data_loader, device):
             labels = pred['labels'].detach().cpu()
             scores = pred['scores'].detach().cpu()
             masks = pred['masks'].detach().cpu()
-            image_id = pred['image_id'].detach().cpu()
 
             if len(labels) == 0: # if no label, nothing to evaluate	
                 continue	

@@ -52,7 +52,7 @@ def analysis(metrics):
             for i in range(len(gt_bbox)):
                 for j in range(len(pred_bbox)):
                     iou = compute_iou(gt_bbox[i], pred_bbox[j])
-                    if iou > 0.5:
+                    if iou > 0.3:
                         logs[image_name][class_name]["gt_label"].append(gt_label[i])
                         logs[image_name][class_name]["gt_bbox"].append(gt_bbox[i])
                         logs[image_name][class_name]["label"].append(pred_label[j])
