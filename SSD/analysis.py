@@ -1,5 +1,6 @@
 import numpy as np 
 import json
+from tqdm import tqdm
 def compute_iou(cand_box, gt_box):
     # Calculate intersection areas
     x1 = np.maximum(cand_box[0], gt_box[0])
@@ -16,12 +17,19 @@ def compute_iou(cand_box, gt_box):
     iou = intersection / union
     return iou
 
-metrics = json.load(open("/dataset/detailed_metrics.json", "r", encoding="utf-8"))
+print("Reading detailed_metrics.json...")
+f = open("detailed_metrics.json", "r")
+metrics = json.load(f)
+f.close()
+print("Finished reading")
 
 from sklearn.metrics import average_precision_score
 def analysis(metrics):
     logs = {}
-    for image_name, result in metrics.items():
+    for image_name, result in tqdm(metrics.items(), desc="image processing"):
+        if isinstance(result, int):
+            continue
+
         if image_name not in logs:
             logs[image_name] = {}
             
@@ -65,7 +73,10 @@ def write_to_excel(metrics):
     wb = Workbook()
     ws = wb.active
     ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou", "cumul_average_iou", "cumul_average_ap"])
-    for image_name, result in analysis(metrics).items():
+    for image_name, result in tqdm(analysis(metrics).items(), desc="image analysis"):
+        if isinstance(result, int):
+            continue
+
         for class_name, stats in result.items():
             if class_name not in is_correct_by_class:
                 is_correct_by_class[class_name] = []
@@ -106,6 +117,6 @@ def write_to_excel(metrics):
         mAP += class_average_ap
         count += 1
     print(f"Final mAP :{mAP/count}, Final mIoU : {mIoU/count}")
-    wb.save("/dataset/test.xlsx")
+    wb.save("test.xlsx")
 
 write_to_excel(metrics)
