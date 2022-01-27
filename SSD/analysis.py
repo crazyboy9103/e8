@@ -26,10 +26,10 @@ print("Finished reading")
 from sklearn.metrics import average_precision_score
 def analysis(metrics):
     logs = {}
-    for image_name, result in tqdm(metrics.items(), desc="image processing"):
+    print(f"Eval started : {metrics['start']}, Eval ended : {metrics['end']}")
+    for image_name, result in tqdm(metrics.items(), desc="reading image result"):
         if isinstance(result, int):
             continue
-
         if image_name not in logs:
             logs[image_name] = {}
             
