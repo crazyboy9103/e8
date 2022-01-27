@@ -18,7 +18,7 @@ def compute_iou(cand_box, gt_box):
     return iou
 
 print("Reading detailed_metrics.json...")
-f = open("/dataset/detailed_metrics.json", "r")
+f = open("detailed_metrics.json", "r")
 metrics = json.load(f)
 f.close()
 print("Finished reading")
@@ -115,6 +115,6 @@ def write_to_excel(metrics):
         mAP += class_average_ap
         count += 1
     print(f"Final mAP :{mAP/count}, Final mIoU : {mIoU/count}")
-    wb.save("/dataset/test.xlsx")
+    wb.save("test.xlsx")
 
 write_to_excel(metrics)

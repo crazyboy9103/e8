@@ -142,7 +142,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
         json.dump(metrics, f)
     del metrics
     
-    with open(f"/dataset/detailed_metrics.json", "w") as f:
+    with open(f"detailed_metrics.json", "w") as f:
         json.dump(logs, f, ensure_ascii=False)
     
     # gather the stats from all processes
