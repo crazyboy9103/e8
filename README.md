@@ -6,6 +6,7 @@ Build docker image:
 ```
 nvidia-docker build --network=host -t e8 docker/
 ```
+## Above creates docker image of name e8
 
 Run docker container:
 ```
