@@ -48,7 +48,8 @@ trainset = ImageFolderWithPaths(root=args.dataset, transform=transforms, target_
 
 
 from torch.utils.data import DataLoader
-trainloader = DataLoader(trainset, batch_size=128, shuffle=True, pin_memory=True, num_workers=4)
+trainloader = DataLoader(trainset, batch_size=64, shuffle=True, pin_memory=True, num_workers=4)
+
 #valloader = DataLoader(valset, batch_size=128, shuffle=False, pin_memory=True, num_workers=4)
 
 import torch.nn as nn 
