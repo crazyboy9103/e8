@@ -70,9 +70,9 @@ net.load_state_dict(torch.load(PATH))
 #print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
 
 logs = {"start":getTimestamp()}
-stats_by_class = {i:{"correct":0, "total":0} for i in range(11)} #11 classes
-labels_by_class = {i:[] for i in range(11)}
-preds_by_class = {i:[] for i in range(11)}
+stats_by_class = {i:{"correct":0, "total":0} for i in range(3)} #3 classes
+labels_by_class = {i:[] for i in range(3)}
+preds_by_class = {i:[] for i in range(3)}
 
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 image_names = list(map(lambda img: img[0], testset.imgs))
