@@ -5,19 +5,35 @@ from torchvision.datasets import ImageFolder
 import argparse
 import json
 import numpy as np
+class ImageFolderWithPaths(ImageFolder):
+    """Custom dataset that includes image file paths. Extends
+    torchvision.datasets.ImageFolder
+    """
+
+    # override the __getitem__ method. this is the method that dataloader calls
+    def __getitem__(self, index):
+        # this is what ImageFolder normally returns 
+        original_tuple = super(ImageFolderWithPaths, self).__getitem__(index)
+        # the image file path
+        path = self.imgs[index][0]
+        # make a new tuple that includes original and the path
+        tuple_with_path = (original_tuple + (path,))
+        return tuple_with_path
+
+
 
 transforms = transforms.Compose([
     transforms.ToTensor()
     #transforms.Resize((224, 224)) # H, W
 ])
-labels = {i:"" for i in range(10)}
+
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
 parser.add_argument("--dataset", default="./dataset", type=str, help="dataset folder")
 #parser.add_argument("--test", default="dataset/test", type=str, help="test folder")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to save")
 args = parser.parse_args()
 
-dataset = ImageFolder(root=args.dataset, transform=transforms, target_transform=None)
+dataset = ImageFolderWithPaths(root=args.dataset, transform=transforms, target_transform=None)
 
 data_size = len(dataset)
 n_train = int(data_size * 0.9)
@@ -34,8 +50,7 @@ valset = torch.utils.data.Subset(dataset, val_idx)
 
 from torch.utils.data import DataLoader
 trainloader = DataLoader(trainset, batch_size=4, shuffle=True, pin_memory=True, num_workers=4)
-testloader = DataLoader(valset, batch_size=4, shuffle=False, pin_memory=True, num_workers=4)
-allFiles, _ = map(list, zip(*testloader.dataset.samples))
+valloader = DataLoader(valset, batch_size=4, shuffle=False, pin_memory=True, num_workers=4)
 
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -50,11 +65,13 @@ from sklearn.metrics import f1_score
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def build_net(num_classes):
     net = models.efficientnet_b0(pretrained=True)
-    num_ftrs = net.fc.in_features
-    net.fc = nn.Linear(num_ftrs, num_classes)
+    #print(net.classifier[1].)
+    num_ftrs = net.classifier[1].in_features
+    net.classifier[1] = nn.Linear(num_ftrs, num_classes)
     return net
-
-net = build_net(len(trainset.classes))
+#print(dir(trainset))
+#net = build_net(len(trainset.classes))
+net = build_net(3)
 net = net.to(device)
 
 import os
@@ -66,7 +83,7 @@ if args.model in os.listdir():
         print("failed to load model, creating new one")
         
 criterion = nn.CrossEntropyLoss() 
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.Adam(net.parameters(), lr=0.0001)
 
 def train_model(model, criterion, optimizer, num_epochs=25):
     since = time.time()
@@ -86,7 +103,7 @@ def train_model(model, criterion, optimizer, num_epochs=25):
         running_corrects = 0
 
         # Iterate over data.
-        for inputs, labels in trainloader:
+        for batch_idx, (inputs, labels, paths) in enumerate(trainloader):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -104,19 +121,23 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 loss.backward()
                 optimizer.step()
 
-            # statistics
-            running_loss += loss.item() * inputs.size(0)
-            running_corrects += torch.sum(preds == labels.data)
-            current_f1_score = f1_score(labels.data, preds)
+            with torch.set_grad_enabled(False):
+                # statistics
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
+            #print("running corrects", running_corrects)
+            #print(labels.data)
+            #print(preds)
+                current_f1_score = f1_score(labels.data.cpu(), preds.cpu(), average="micro")
 
-            epoch_loss = running_loss / len(trainset)
-            epoch_acc = running_corrects.double() / len(trainset)
-
-            print('Loss: {:.4f} Acc: {:.4f} F1 Score: {:.4f}'.format(epoch_loss, epoch_acc, current_f1_score))
+                epoch_loss = running_loss / len(trainset)
+                epoch_acc = running_corrects.double() / len(trainset)
+            
+                #print('Loss: {:.4f} Acc: {:.4f} F1 Score: {:.4f}'.format(epoch_loss, epoch_acc, current_f1_score))
             # deep copy the model
-            if epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(model.state_dict())
+                if epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
     # load best model weights
     model.load_state_dict(best_model_wts)
     return model
@@ -128,7 +149,7 @@ def test_model(model):
     total_f1_score = 0.0
     total_acc = 0.0
     counts = 0
-    for batch_idx, (inputs, labels) in enumerate(testloader):
+    for inputs, labels, paths in testloader:
         counts += 1
         inputs = inputs.to(device)
         labels = labels.to(device)
@@ -138,15 +159,15 @@ def test_model(model):
         with torch.set_grad_enabled(False):
             outputs = model(inputs)
             _, preds = torch.max(outputs, 1)
-
-            for i in range(inputs.size()[0]):
+            
+            for i, path in enumerate(paths):
                 #현재 파일에 대한 파일경로
-                logs[allFiles[batch_idx * 4 + i]] = {"pred":preds[i].item(), "true": labels[i].item()}
+                logs[path] = {"pred":preds[i].item(), "true": labels[i].item()}
 
         # statistics
         running_corrects += torch.sum(preds == labels.data)
 
-        current_f1_score = f1_score(labels.data, preds)
+        current_f1_score = f1_score(labels.data.cpu(), preds.cpu())
         total_f1_score += current_f1_score
 
         epoch_acc = running_corrects.double() / len(testset)
