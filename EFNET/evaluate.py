@@ -47,7 +47,7 @@ testloader = DataLoader(testset, batch_size=1, shuffle=False, pin_memory=True, n
 
 PATH = args.model
 dataiter = iter(testloader) 
-images, labels = dataiter.next() # 실험용 데이터와 결과 출력 
+images, labels, paths = dataiter.next() # 실험용 데이터와 결과 출력 
 def imsave(img):
     npimg = img.numpy()
     plt.figure(1, figsize=(12, 12))

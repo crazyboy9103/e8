@@ -5,6 +5,7 @@ from torchvision.datasets import ImageFolder
 import argparse
 import json
 import numpy as np
+from tqdm import tqdm
 class ImageFolderWithPaths(ImageFolder):
     """Custom dataset that includes image file paths. Extends
     torchvision.datasets.ImageFolder
@@ -49,8 +50,8 @@ valset = torch.utils.data.Subset(dataset, val_idx)
 
 
 from torch.utils.data import DataLoader
-trainloader = DataLoader(trainset, batch_size=4, shuffle=True, pin_memory=True, num_workers=4)
-valloader = DataLoader(valset, batch_size=4, shuffle=False, pin_memory=True, num_workers=4)
+trainloader = DataLoader(trainset, batch_size=128, shuffle=True, pin_memory=True, num_workers=4)
+valloader = DataLoader(valset, batch_size=128, shuffle=False, pin_memory=True, num_workers=4)
 
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -101,9 +102,9 @@ def train_model(model, criterion, optimizer, num_epochs=25):
 
         running_loss = 0.0
         running_corrects = 0
-
+        
         # Iterate over data.
-        for batch_idx, (inputs, labels, paths) in enumerate(trainloader):
+        for batch_idx, (inputs, labels, paths) in enumerate(tqdm(trainloader)):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -133,11 +134,14 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 epoch_loss = running_loss / len(trainset)
                 epoch_acc = running_corrects.double() / len(trainset)
             
-                #print('Loss: {:.4f} Acc: {:.4f} F1 Score: {:.4f}'.format(epoch_loss, epoch_acc, current_f1_score))
+                if batch_idx == len(trainloader)-1:
+                    print('Epoch {} Loss: {:.4f} Acc: {:.4f} F1 Score: {:.4f}'.format(epoch, epoch_loss, epoch_acc, current_f1_score))
             # deep copy the model
-                if epoch_acc > best_acc:
+                if epoch_acc > best_acc and batch_idx == len(trainloader)-1:
                     best_acc = epoch_acc
                     best_model_wts = copy.deepcopy(model.state_dict())
+                    torch.save(best_model_wts, "eff_net.pt")
+                    print("model saved to eff_net.pt")
     # load best model weights
     model.load_state_dict(best_model_wts)
     return model
