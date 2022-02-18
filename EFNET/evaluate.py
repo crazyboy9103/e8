@@ -65,7 +65,9 @@ def build_net(num_classes):
     return net
 
 net = build_net(len(testset.classes))
-net.load_state_dict(torch.load(PATH)) 
+net.load_state_dict(torch.load(PATH))
+device = torch.device("cuda:0")
+net.to(device)
 #outputs = net(images)
 #_, predicted = torch.max(outputs, 1) 
 #print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
@@ -79,7 +81,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
     for img_idx, (image, label, path) in enumerate(testloader): 
-        output = net(image)
+        output = net(image.to(device))
         
         _, predicted = torch.max(output.data, 1) 
         path = path[0] 
@@ -114,7 +116,7 @@ with torch.no_grad():
         stats_by_class[temp_label]["total"] += 1
         stats_by_class[temp_label]["correct"] += int(is_correct)
         
-        if img_idx % 20 == 0:
+        if img_idx % 500 == 0:
             str_buffer = f"== Image Index {img_idx}=="
             for i in range(3):
                 labels = labels_by_class[testset.classes[i]]
