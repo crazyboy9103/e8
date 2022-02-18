@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 import torch.nn as nn 
 import argparse
 import json
-
-
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 class ImageFolderWithPaths(ImageFolder):
     """Custom dataset that includes image file paths. Extends
     torchvision.datasets.ImageFolder
@@ -43,9 +44,8 @@ transforms = transforms.Compose([
 
 test_dir  = './dataset'
 testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
-testloader = DataLoader(testset, batch_size=1, shuffle=False, pin_memory=True, num_workers=4)
+testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
 
-PATH = args.model
 dataiter = iter(testloader) 
 images, labels, paths = dataiter.next() # 실험용 데이터와 결과 출력 
 def imsave(img):
@@ -64,34 +64,36 @@ def build_net(num_classes):
     return net
 
 net = build_net(3)
+PATH = args.model
 net.load_state_dict(torch.load(PATH)) 
+net.eval()
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+net.to(device)
 #outputs = net(images)
 #_, predicted = torch.max(outputs, 1) 
 #print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
-
 logs = {"start":getTimestamp()}
-stats_by_class = {i:{"correct":0, "total":0} for i in range(3)} #3 classes
-labels_by_class = {i:[] for i in range(3)}
-preds_by_class = {i:[] for i in range(3)}
+stats_by_class = {testset.classes[i]:{"correct":0, "total":0} for i in range(3)} #3 classes
+labels_by_class = {testset.classes[i]:[] for i in range(3)}
+preds_by_class = {testset.classes[i]:[] for i in range(3)}
 
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
-    for img_idx, (image, label, path) in enumerate(testloader): 
-        output = net(image)
+    for img_idx, (image, label, path) in enumerate(tqdm(testloader)): 
+        output = net(image.to(device))
         path = path[0] 
-        _, predicted = torch.max(output.data, 1) 
+        _, predicted = torch.max(output, 1) 
         
         img_name = path
-        temp_label = label.item()
-        temp_predict = predicted.item()
-        
-
+        temp_label = testset.classes[label.item()]
+        temp_predict = testset.classes[predicted.item()]
         is_correct = temp_label == temp_predict
-        print("path", path)
-        print("predict", temp_predict)
-        print("label", temp_label)
-        print("iscorrect", is_correct)
+        stats_by_class[temp_label]["total"] += 1
+        stats_by_class[temp_label]["correct"] += int(is_correct)
+        #print("path", path)
+        #print("predict", temp_predict)
+        #print("label", temp_label)
+        #print("iscorrect", is_correct)
         logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
         logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
         logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
@@ -102,24 +104,22 @@ with torch.no_grad():
         temp_labels = labels_by_class[temp_label]
         temp_preds = preds_by_class[temp_label]
         
-        cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds), recall_score(temp_labels, temp_preds), f1_score(temp_labels, temp_preds)
+        cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds, average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="micro")
         
         logs[path]["cumul_precision"] = cumul_precision
         logs[path]["cumul_recall"] = cumul_recall
         logs[path]["cumul_f1"] = cumul_f1
         
   
-        stats_by_class[temp_label]["total"] += 1
-        stats_by_class[temp_label]["correct"] += int(is_correct)
         
-        if img_idx % 20 == 0:
+        if img_idx % 500 == 0:
             str_buffer = f"== Image Index {img_idx}=="
             for i in range(3):
-                labels = labels_by_class[i]
-                preds = labels_by_class[i]
+                labels = labels_by_class[testset.classes[i]]
+                preds = preds_by_class[testset.classes[i]]
                 try:
                     acc = accuracy_score(labels, preds)
-                    f1 = f1_score(labels, preds)
+                    f1 = f1_score(labels, preds, average="micro")
                     str_stats = f"Class {i}, Accuracy:{acc}, F1: {f1}"
                     str_buffer = f"{str_buffer}\n{str_stats}\n"
                 except: 
@@ -129,12 +129,12 @@ with torch.no_grad():
             print(str_buffer)
     
     for i in range(3):
-        labels = labels_by_class[i]
-        preds = labels_by_class[i]
-        logs["class_stats"][i] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds)}
+        labels = labels_by_class[testset.classes[i]]
+        preds = labels_by_class[testset.classes[i]]
+        logs["class_stats"][testset.classes[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="micro")}
     
-    mean_acc = np.mean(list(logs["class_stats"][i]["acc"] for i in range(11)))
-    mean_f1 = np.mean(list(logs["class_stats"][i]["f1"] for i in range(11)))
+    mean_acc = np.mean(list(logs["class_stats"][testset.classes[i]]["acc"] for i in range(3)))
+    mean_f1 = np.mean(list(logs["class_stats"][testset.classes[i]]["f1"] for i in range(3)))
 
     logs["final_stats"] = {"mean_acc":mean_acc, "mean_f1":mean_f1}
 
@@ -170,8 +170,8 @@ def write_to_excel(logs):
     print("test.xlsx saved")
 
     print(f"Eval started : {logs['start']}, Eval ended : {logs['end']}")
-    for i in range(11):
-        print(f"Class {i}, Accuracy: {logs['class_stats'][i]['acc']}, F1: {logs['class_stats'][i]['f1']}")
+    for i in range(3):
+        print(f"Class {testset.classes[i]}, Accuracy: {logs['class_stats'][testset.classes[i]]['acc']}, F1: {logs['class_stats'][testset.classes[i]]['f1']}")
 
     print(f"Final mean Acc : {logs['final_stats']['mean_acc']}, mean F1 : {logs['final_stats']['mean_f1']}")
 

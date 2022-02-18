@@ -119,7 +119,7 @@ with torch.no_grad():
     for i in range(3):
         labels = labels_by_class[idx_to_class[i]]
         preds = labels_by_class[idx_to_class[i]]
-        logs["class_stats"][idx_to_class[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds)}
+        logs["class_stats"][idx_to_class[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="micro")}
     
     mean_acc = np.mean(list(logs["class_stats"][idx_to_class[i]]["acc"] for i in range(3)))
     mean_f1 = np.mean(list(logs["class_stats"][idx_to_class[i]]["f1"] for i in range(3)))
