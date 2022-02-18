@@ -63,7 +63,7 @@ def build_net(num_classes):
     net.classifier[1] = nn.Linear(num_ftrs, num_classes)
     return net
 
-net = build_net(len(testset.classes))
+net = build_net(3)
 net.load_state_dict(torch.load(PATH)) 
 #outputs = net(images)
 #_, predicted = torch.max(outputs, 1) 
@@ -85,6 +85,8 @@ with torch.no_grad():
         img_name = path
         temp_label = label.item()
         temp_predict = predicted.item()
+        
+
         is_correct = temp_label == temp_predict
         print("path", path)
         print("predict", temp_predict)
@@ -93,19 +95,13 @@ with torch.no_grad():
         logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
         logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
         logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
-        try:
-            logs[path]["current_acc"] = stats_by_class[temp_label]["correct"] / stats_by_class[temp_label]["total"]
-        except:
-            logs[path]["current_acc"] = 0
         
         labels_by_class[temp_label].append(temp_label)
         preds_by_class[temp_label].append(temp_predict)
 
         temp_labels = labels_by_class[temp_label]
         temp_preds = preds_by_class[temp_label]
-        #numpy_labels, numpy_preds = labels.numpy(), predicted.numpy()
-
-        #batch_precision, batch_recall = precision_score(numpy_labels, numpy_preds), recall_score(numpy_labels, numpy_preds)
+        
         cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds), recall_score(temp_labels, temp_preds), f1_score(temp_labels, temp_preds)
         
         logs[path]["cumul_precision"] = cumul_precision

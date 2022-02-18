@@ -34,24 +34,22 @@ parser.add_argument("--dataset", default="./dataset", type=str, help="dataset fo
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to save")
 args = parser.parse_args()
 
-dataset = ImageFolderWithPaths(root=args.dataset, transform=transforms, target_transform=None)
+trainset = ImageFolderWithPaths(root=args.dataset, transform=transforms, target_transform=None)
 
-data_size = len(dataset)
-n_train = int(data_size * 0.9)
-n_valid = data_size
+#data_size = len(dataset)
+#n_train = int(data_size * 0.9)
+#n_valid = data_size
+#split_idx = np.random.choice(data_size, data_size, replace=False)
+#train_idx = split_idx
+#val_idx = split_idx[n_train:n_valid]
 
-split_idx = np.random.choice(data_size, data_size, replace=False)
-
-train_idx = split_idx[:n_train]
-val_idx = split_idx[n_train:n_valid]
-
-trainset = torch.utils.data.Subset(dataset, train_idx)
-valset = torch.utils.data.Subset(dataset, val_idx)
+#trainset = torch.utils.data.Subset(dataset, train_idx)
+#valset = torch.utils.data.Subset(dataset, val_idx)
 
 
 from torch.utils.data import DataLoader
 trainloader = DataLoader(trainset, batch_size=128, shuffle=True, pin_memory=True, num_workers=4)
-valloader = DataLoader(valset, batch_size=128, shuffle=False, pin_memory=True, num_workers=4)
+#valloader = DataLoader(valset, batch_size=128, shuffle=False, pin_memory=True, num_workers=4)
 
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -183,6 +181,6 @@ def test_model(model):
     return model
 #%% 
 model = train_model(model=net, criterion=criterion, optimizer=optimizer, num_epochs=25)
-model = test_model(model)
+#model = test_model(model)
 print('Finished Training')
-torch.save(model.state_dict(), args.model)
+#torch.save(model.state_dict(), args.model)

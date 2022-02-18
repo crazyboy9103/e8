@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn 
 import argparse
 import json
-
+from tqdm import tqdm
 
 class ImageFolderWithPaths(ImageFolder):
     """Custom dataset that includes image file paths. Extends
@@ -46,9 +46,8 @@ test_dir  = './dataset'
 testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
 class_to_idx = testset.class_to_idx
 idx_to_class = {v:k for k, v in class_to_idx.items()}
-testloader = DataLoader(testset, batch_size=1, shuffle=False, pin_memory=True, num_workers=4)
+testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
 
-PATH = args.model
 dataiter = iter(testloader) 
 images, labels, paths = dataiter.next() # 실험용 데이터와 결과 출력 
 def imsave(img):
@@ -67,6 +66,7 @@ def build_net(num_classes):
     return net
 
 net = build_net(len(testset.classes))
+PATH = args.model
 net.load_state_dict(torch.load(PATH)) 
 #outputs = net(images)
 #_, predicted = torch.max(outputs, 1) 
@@ -77,19 +77,23 @@ stats_by_class = {idx_to_class[i]:{"correct":0, "total":0} for i in range(3)} #1
 labels_by_class = {idx_to_class[i]:[] for i in range(3)}
 preds_by_class = {idx_to_class[i]:[] for i in range(3)}
 
+net.eval()
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+net.to(device)
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 with torch.no_grad(): 
-    for img_idx, (image, label, path) in enumerate(testloader): 
-        output = net(image)
-        _, predicted = torch.max(output.data, 1) 
+    for img_idx, (image, label, path) in enumerate(tqdm(testloader)): 
+        output = net(image.to(device))
+        #print(output)
+        _, predicted = torch.max(output.cpu(), 1) 
         
         img_name = path
-        temp_label = idx_to_class(label.item())
-        temp_predict = idx_to_class(predicted.item())
+        temp_label = idx_to_class[label.item()]
+        temp_predict = idx_to_class[predicted.item()]
         is_correct = temp_label == temp_predict
 
-        print("predict", temp_predict)
-        print("label", temp_label)
+        #print("predict", temp_predict)
+        #print("label", temp_label)
 
     
         labels_by_class[temp_label].append(temp_label)
