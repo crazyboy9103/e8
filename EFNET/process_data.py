@@ -93,4 +93,5 @@ def process_dataset(data_dir):
                 bbox_image = cv2.resize(bbox_image, (W_new, H_new), interpolation=cv2.INTER_AREA)
                 cv2.imwrite(dataset_path + label +"/"+ filename + "_" + str(i) + ".jpg", bbox_image)
 
+
 process_dataset("/dataset/data_1230")
