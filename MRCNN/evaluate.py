@@ -43,7 +43,7 @@ from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 #saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
 #most_recent_dataset = saved_datasets[-1]
 
-dataset = CustomDataset("/dataset", args.data)
+dataset = CustomDataset("/dataset/data_1230", args.data)
 N = len(dataset.images) # size of dataset
 
 #saved_models = [file for file in os.listdir() if file.endswith(".pt") and "mrcnn" in file]
@@ -118,7 +118,7 @@ for it in range(num):
         for temp_label, pred in pred_result.items():
             score_idx = torch.as_tensor(pred['scores']) > confidence
             if torch.count_nonzero(score_idx) == 0:
-                print("nothing detected on", decode[temp_label])
+                #print("nothing detected on", decode[temp_label])
                 continue
 
             boxes = pred['boxes']

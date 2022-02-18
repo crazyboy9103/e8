@@ -54,7 +54,7 @@ import random
 #saved_datasets = sorted(saved_datasets, key=lambda filename:int(filename.strip("dataset_").strip(".pt")))
 #most_recent_dataset = saved_datasets[-1]
 
-dataset = CustomDataset("/dataset", args.data)
+dataset = CustomDataset("/dataset/data_1230", args.data)
 N = len(dataset.images) # size of dataset
 
 #saved_models = [file for file in os.listdir() if file.endswith(".pt") and "ssd" in file]
@@ -64,9 +64,7 @@ print(f"evaluate {args.model} with {args.data}")
 
 model = Model(num_classes=dataset.num_classes, device = "cpu", parallel = False, model_name=args.model,  batch_size=1)
 
-for it in range(num):
-    
-    
+for it in range(num):    
     temp_labels = {}
     temp_imgs = {}
 
@@ -119,7 +117,7 @@ for it in range(num):
         for temp_label, pred in pred_result.items():
             score_idx = torch.as_tensor(pred['scores']) > confidence
             if torch.count_nonzero(score_idx) == 0:
-                print("nothing detected on", decode[temp_label])
+                #print("nothing detected on", decode[temp_label])
                 continue
 
             boxes = pred['boxes']
