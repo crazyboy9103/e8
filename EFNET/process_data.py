@@ -15,7 +15,8 @@ def process_dataset(data_dir):
 
     for root, dirs, files in tqdm(os.walk(data_dir), desc="Searching for files"):
         for file in files:
-            temp = file.split("_")[2]
+            #print(file)
+            temp = file.split("_")
             cat, _, img_type = temp[2], temp[3], temp[4]
             if cat == "W" and img_type == "R":
                 paths_filename[file] = os.path.join(root, file)
@@ -91,3 +92,5 @@ def process_dataset(data_dir):
                 bbox_image = image[ymin:ymax, xmin:xmax]
                 bbox_image = cv2.resize(bbox_image, (W_new, H_new), interpolation=cv2.INTER_AREA)
                 cv2.imwrite(dataset_path + label +"/"+ filename + "_" + str(i) + ".jpg", bbox_image)
+
+process_dataset("/dataset/data_1230")

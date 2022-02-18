@@ -4,25 +4,37 @@ import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 import argparse
 import json
+import numpy as np
 
 transforms = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Resize((224, 224)) # H, W
+    transforms.ToTensor()
+    #transforms.Resize((224, 224)) # H, W
 ])
 labels = {i:"" for i in range(10)}
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
-parser.add_argument("--train", default="dataset/train", type=str, help="train folder")
-parser.add_argument("--test", default="dataset/test", type=str, help="test folder")
+parser.add_argument("--dataset", default="./dataset", type=str, help="dataset folder")
+#parser.add_argument("--test", default="dataset/test", type=str, help="test folder")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to save")
 args = parser.parse_args()
-trainset = ImageFolder(root=args.train, transform=transforms, target_transform=None)
-testset = ImageFolder(root=args.test, transform=transforms, target_transform=None)
-print(trainset.classes[label] for label in labels)
-print(trainset.classes)
+
+dataset = ImageFolder(root=args.dataset, transform=transforms, target_transform=None)
+
+data_size = len(dataset)
+n_train = int(data_size * 0.9)
+n_valid = data_size
+
+split_idx = np.random.choice(data_size, data_size, replace=False)
+
+train_idx = split_idx[:n_train]
+val_idx = split_idx[n_train:n_valid]
+
+trainset = torch.utils.data.Subset(dataset, train_idx)
+valset = torch.utils.data.Subset(dataset, val_idx)
+
 
 from torch.utils.data import DataLoader
 trainloader = DataLoader(trainset, batch_size=4, shuffle=True, pin_memory=True, num_workers=4)
-testloader = DataLoader(testset, batch_size=4, shuffle=False, pin_memory=True, num_workers=4)
+testloader = DataLoader(valset, batch_size=4, shuffle=False, pin_memory=True, num_workers=4)
 allFiles, _ = map(list, zip(*testloader.dataset.samples))
 
 import torch.nn as nn 
