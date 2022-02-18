@@ -79,14 +79,17 @@ image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
     for img_idx, (image, label, path) in enumerate(testloader): 
         output = net(image)
-        
+        path = path[0] 
         _, predicted = torch.max(output.data, 1) 
         
         img_name = path
         temp_label = label.item()
         temp_predict = predicted.item()
         is_correct = temp_label == temp_predict
-
+        print("path", path)
+        print("predict", temp_predict)
+        print("label", temp_label)
+        print("iscorrect", is_correct)
         logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
         logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
         logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
