@@ -57,13 +57,15 @@ for image, label, path in testloader:
     if len(seen_labels) == 3:
         break
     if label not in seen_labels:
+        seen_labels.append(label)
         output = net(image)
         _, predicted = torch.max(output, 1) 
         pred = testset.classes[predicted.item()]
-        seen_labels.append(label)
         label = testset.classes[label]
-        npimg = image.numpy()
+        npimg = image[0].numpy()
         plt.figure()
+        plt.axis('off')
+        plt.title(f"label_{label}_pred_{pred}")
         plt.imshow(np.transpose(npimg, (1, 2, 0)))
         plt.savefig(f"label_{label}_pred_{pred}.png", dpi=600)
         plt.clf()
