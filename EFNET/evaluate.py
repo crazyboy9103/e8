@@ -8,6 +8,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn as nn 
 import argparse
+import json
+
+
+class ImageFolderWithPaths(ImageFolder):
+    """Custom dataset that includes image file paths. Extends
+    torchvision.datasets.ImageFolder
+    """
+
+    # override the __getitem__ method. this is the method that dataloader calls
+    def __getitem__(self, index):
+        # this is what ImageFolder normally returns 
+        original_tuple = super(ImageFolderWithPaths, self).__getitem__(index)
+        # the image file path
+        path = self.imgs[index][0]
+        # make a new tuple that includes original and the path
+        tuple_with_path = (original_tuple + (path,))
+        return tuple_with_path
+
+
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
@@ -19,12 +38,11 @@ parser.add_argument("--model", default="eff_net.pt", type=str, help="model name 
 args = parser.parse_args()
 
 transforms = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Resize((224, 224)) # H, W
+    transforms.ToTensor()
 ])
 
-test_dir  = 'dataset/test'
-testset = ImageFolder(root=test_dir, transform=transforms, target_transform=None)
+test_dir  = './dataset'
+testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
 testloader = DataLoader(testset, batch_size=1, shuffle=False, pin_memory=True, num_workers=4)
 
 PATH = args.model
@@ -41,8 +59,8 @@ print('GroundTruth: ', ' '.join('%5s' % testset.classes[label] for label in labe
 
 def build_net(num_classes):
     net = models.efficientnet_b0(pretrained=True)
-    num_ftrs = net.fc.in_features
-    net.fc = nn.Linear(num_ftrs, num_classes)
+    num_ftrs = net.classifier[1].in_features
+    net.classifier[1] = nn.Linear(num_ftrs, num_classes)
     return net
 
 net = build_net(len(testset.classes))
@@ -59,22 +77,23 @@ preds_by_class = {i:[] for i in range(11)}
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
-    for img_idx, (image, label) in enumerate(testloader): 
+    for img_idx, (image, label, path) in enumerate(testloader): 
         output = net(image)
-        img_name = image_names[img_idx]
+        
         _, predicted = torch.max(output.data, 1) 
         
+        img_name = path
         temp_label = label.item()
         temp_predict = predicted.item()
         is_correct = temp_label == temp_predict
 
-        logs[img_name] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
-        logs[img_name]["cumul_correct"] = stats_by_class[temp_label]["correct"]
-        logs[img_name]["cumul_total"] = stats_by_class[temp_label]["total"]
+        logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
+        logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
+        logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
         try:
-            logs[img_name]["current_acc"] = stats_by_class[temp_label]["correct"] / stats_by_class[temp_label]["total"]
+            logs[path]["current_acc"] = stats_by_class[temp_label]["correct"] / stats_by_class[temp_label]["total"]
         except:
-            logs[img_name]["current_acc"] = 0
+            logs[path]["current_acc"] = 0
         
         labels_by_class[temp_label].append(temp_label)
         preds_by_class[temp_label].append(temp_predict)
@@ -86,18 +105,17 @@ with torch.no_grad():
         #batch_precision, batch_recall = precision_score(numpy_labels, numpy_preds), recall_score(numpy_labels, numpy_preds)
         cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds), recall_score(temp_labels, temp_preds), f1_score(temp_labels, temp_preds)
         
-        logs[img_name]["cumul_precision"] = cumul_precision
-        logs[img_name]["cumul_recall"] = cumul_recall
-        logs[img_name]["cumul_f1"] = cumul_f1
+        logs[path]["cumul_precision"] = cumul_precision
+        logs[path]["cumul_recall"] = cumul_recall
+        logs[path]["cumul_f1"] = cumul_f1
         
-        total += 1 
-        correct += int(is_correct)
+  
         stats_by_class[temp_label]["total"] += 1
-        stats_by_class[temp_label]["correct"] += int(is_correct))
+        stats_by_class[temp_label]["correct"] += int(is_correct)
         
         if img_idx % 20 == 0:
-            str_buffer = f"== Image Index {img_idx}==") 
-            for i in range(11):
+            str_buffer = f"== Image Index {img_idx}=="
+            for i in range(3):
                 labels = labels_by_class[i]
                 preds = labels_by_class[i]
                 try:
@@ -111,10 +129,10 @@ with torch.no_grad():
             
             print(str_buffer)
     
-    for i in range(11):
+    for i in range(3):
         labels = labels_by_class[i]
         preds = labels_by_class[i]
-        logs["class_stats"][i] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds)})
+        logs["class_stats"][i] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds)}
     
     mean_acc = np.mean(list(logs["class_stats"][i]["acc"] for i in range(11)))
     mean_f1 = np.mean(list(logs["class_stats"][i]["f1"] for i in range(11)))
@@ -135,10 +153,16 @@ def write_to_excel(logs):
     for key, value in logs.items():
         if key not in ["final_stats", "end", "start", "class_stats"]:
             img_name = key
-            predict, label, cumul_prec, cumul_recall, cumul_f1, cumul_correct, cumul_total = value["predict"]
 
             try:
-                ws.append([img_name, str(value["predict"]), str(value["label"), str(value["cumul_precision"]), str(value["cumul_recall"), str(value["cumul_f1"]), str(value["cumul_correct"]), str(value["cumul_total"]))
+                ws.append([img_name, 
+                str(value["predict"]), 
+                str(value["label"]), 
+                str(value["cumul_precision"]), 
+                str(value["cumul_recall"]), 
+                str(value["cumul_f1"]), 
+                str(value["cumul_correct"]), 
+                str(value["cumul_total"])])
 
             except:
                 continue
