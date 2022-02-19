@@ -90,6 +90,8 @@ with torch.no_grad():
         temp_label = testset.classes[label.item()]
         temp_predict = testset.classes[predicted.item()]
         is_correct = temp_label == temp_predict
+        stats_by_class[temp_label]["total"] += 1
+        stats_by_class[temp_label]["correct"] += int(is_correct)
         #print("path", path)
         #print("predict", temp_predict)
         #print("label", temp_label)
@@ -102,21 +104,19 @@ with torch.no_grad():
         labels_by_class[temp_label].append(temp_label)
         preds_by_class[temp_label].append(temp_predict)
 
-        temp_labels = labels_by_class[temp_label]
-        temp_preds = preds_by_class[temp_label]
+        #temp_labels = labels_by_class[temp_label]
+        #temp_preds = preds_by_class[temp_label]
         
        # print(set(temp_preds) -set(temp_labels))
-        cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds,average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="weighted")
+        #cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds,average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="weighted")
         
-        logs[path]["cumul_precision"] = cumul_precision
-        logs[path]["cumul_recall"] = cumul_recall
-        logs[path]["cumul_f1"] = cumul_f1
+        #logs[path]["cumul_precision"] = cumul_precision
+        #logs[path]["cumul_recall"] = cumul_recall
+        #logs[path]["cumul_f1"] = cumul_f1
         
   
-        stats_by_class[temp_label]["total"] += 1
-        stats_by_class[temp_label]["correct"] += int(is_correct)
         
-        if img_idx % 500 == 0:
+        if img_idx % 1000 == 0:
             str_buffer = f"== Image Index {img_idx}=="
             for i in range(3):
                 labels = labels_by_class[testset.classes[i]]
@@ -149,10 +149,38 @@ json.dump(logs, open("detailed_metrics.json", "w"))
 
 def write_to_excel(logs):
     from openpyxl import Workbook
+    
+    labels = []
+    preds = []
 
+    for k, v in labels_by_class.items():
+        labels.extend(v)
+    for k, v in preds_by_class.items():
+        preds.extend(v)
+
+    from sklearn.metrics import multilabel_confusion_matrix as mcm
+
+    multi_confusion = mcm(labels, preds, labels=["best", "normal", "faulty"])
+    best_conf, norm_conf, fault_conf = multi_confusion
+    
+
+    b_tn, b_fp, b_fn, b_tp = best_conf.ravel()
+    n_tn, n_fp, n_fn, n_tp = norm_conf.ravel()
+    f_tn, f_fp, f_fn, f_tp = fault_conf.ravel()
+    
+    
     wb = Workbook()
     ws = wb.active
-    ws.append(["image_name", "predict", "label", "cumul_precision", "cumul_recall", "cumul_f1", "cumul_correct", "cumul_total"])
+
+    ws.append(["best_tn", "best_fp", "best_fn", "best_tp"])
+    ws.append([b_tn, b_fp, b_fn, b_tp])
+    ws.append(["normal_tn", "normal_fp", "normal_fn", "normal_tp"])
+    ws.append([n_tn, n_fp, n_fn, n_tp])
+    ws.append(["faulty_tn", "faulty_fp", "faulty_fn", "faulty_tp"])
+    ws.append([f_tn, f_fp, f_fn, f_tp])
+
+    ws.append(["image_name", "predict", "label", "cumul_correct", "cumul_total"])
+    #ws.append(["image_name", "predict", "label", "cumul_precision", "cumul_recall", "cumul_f1", "cumul_correct", "cumul_total"])
     for key, value in logs.items():
         if key not in ["final_stats", "end", "start", "class_stats"]:
             img_name = key
@@ -161,9 +189,6 @@ def write_to_excel(logs):
                 ws.append([img_name, 
                 str(value["predict"]), 
                 str(value["label"]), 
-                str(value["cumul_precision"]), 
-                str(value["cumul_recall"]), 
-                str(value["cumul_f1"]), 
                 str(value["cumul_correct"]), 
                 str(value["cumul_total"])])
 
