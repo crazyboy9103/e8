@@ -116,7 +116,7 @@ with torch.no_grad():
         
   
         
-        if img_idx % 1000 == 0:
+        if img_idx % 5000 == 0:
             str_buffer = f"== Image Index {img_idx}=="
             for i in range(3):
                 labels = labels_by_class[testset.classes[i]]
@@ -131,7 +131,7 @@ with torch.no_grad():
                     str_buffer = f"{str_buffer}\n{str_stats}\n"
             
             print(str_buffer)
-    
+    logs["class_stats"] = {}
     for i in range(3):
         labels = labels_by_class[testset.classes[i]]
         preds = preds_by_class[testset.classes[i]]
