@@ -68,6 +68,7 @@ net = build_net(len(testset.classes))
 net.load_state_dict(torch.load(PATH))
 device = torch.device("cuda:0")
 net.to(device)
+net.eval()
 #outputs = net(images)
 #_, predicted = torch.max(outputs, 1) 
 #print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
@@ -82,8 +83,8 @@ image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
     for img_idx, (image, label, path) in enumerate(testloader): 
         output = net(image.to(device))
-        
-        _, predicted = torch.max(output.data, 1) 
+         
+        _, predicted = torch.max(output, 1) 
         path = path[0] 
         img_name = path
         temp_label = testset.classes[label.item()]
@@ -120,7 +121,7 @@ with torch.no_grad():
             str_buffer = f"== Image Index {img_idx}=="
             for i in range(3):
                 labels = labels_by_class[testset.classes[i]]
-                preds = labels_by_class[testset.classes[i]]
+                preds = preds_by_class[testset.classes[i]]
                 try:
                     acc = accuracy_score(labels, preds)
                     f1 = f1_score(labels, preds, average="micro")
@@ -134,7 +135,7 @@ with torch.no_grad():
     
     for i in range(3):
         labels = labels_by_class[testset.classes[i]]
-        preds = labels_by_class[testset.classes[i]]
+        preds = preds_by_class[testset.classes[i]]
         logs["class_stats"][testset.classes[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="micro")}
     
     mean_acc = np.mean(list(logs["class_stats"][testset.classes[i]]["acc"] for i in range(3)))

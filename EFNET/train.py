@@ -73,7 +73,7 @@ def build_net(num_classes):
 #net = build_net(len(trainset.classes))
 net = build_net(3)
 net = net.to(device)
-
+#net.train()
 import os
 if args.model in os.listdir():
     try:
