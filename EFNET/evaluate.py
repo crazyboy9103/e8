@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn 
 import argparse
 import json
-
+from tqdm import tqdm
 
 class ImageFolderWithPaths(ImageFolder):
     """Custom dataset that includes image file paths. Extends
@@ -81,7 +81,7 @@ preds_by_class = {testset.classes[i]:[] for i in range(3)}
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
-    for img_idx, (image, label, path) in enumerate(testloader): 
+    for img_idx, (image, label, path) in enumerate(tqdm(testloader, desc="evaluating")): 
         output = net(image.to(device))
          
         _, predicted = torch.max(output, 1) 
@@ -104,10 +104,9 @@ with torch.no_grad():
 
         temp_labels = labels_by_class[temp_label]
         temp_preds = preds_by_class[temp_label]
-        #numpy_labels, numpy_preds = labels.numpy(), predicted.numpy()
-
-        #batch_precision, batch_recall = precision_score(numpy_labels, numpy_preds), recall_score(numpy_labels, numpy_preds)
-        cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds,average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="micro")
+        
+       # print(set(temp_preds) -set(temp_labels))
+        cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds,average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="weighted")
         
         logs[path]["cumul_precision"] = cumul_precision
         logs[path]["cumul_recall"] = cumul_recall
@@ -124,7 +123,7 @@ with torch.no_grad():
                 preds = preds_by_class[testset.classes[i]]
                 try:
                     acc = accuracy_score(labels, preds)
-                    f1 = f1_score(labels, preds, average="micro")
+                    f1 = f1_score(labels, preds, average="weighted")
                     str_stats = f"Class {testset.classes[i]}, Accuracy:{acc}, F1: {f1}"
                     str_buffer = f"{str_buffer}\n{str_stats}\n"
                 except: 
@@ -136,7 +135,7 @@ with torch.no_grad():
     for i in range(3):
         labels = labels_by_class[testset.classes[i]]
         preds = preds_by_class[testset.classes[i]]
-        logs["class_stats"][testset.classes[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="micro")}
+        logs["class_stats"][testset.classes[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="weighted")}
     
     mean_acc = np.mean(list(logs["class_stats"][testset.classes[i]]["acc"] for i in range(3)))
     mean_f1 = np.mean(list(logs["class_stats"][testset.classes[i]]["f1"] for i in range(3)))
