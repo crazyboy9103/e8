@@ -26,6 +26,7 @@ class ImageFolderWithPaths(ImageFolder):
         return tuple_with_path
 
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
+parser.add_argument("--dataset", default="./dataset", type=str, help="dataset path")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to load from")
 args = parser.parse_args()
 
@@ -33,7 +34,7 @@ transforms = transforms.Compose([
     transforms.ToTensor()
 ])
 
-test_dir  = './dataset'
+test_dir  = args.dataset
 testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
 testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
 
