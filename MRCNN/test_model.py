@@ -18,11 +18,13 @@ class MyModel(Model):
         test_data = torch.utils.data.Subset(dataset, test_idx)
         f = open("test_mrcnn.csv", "w")
         csv_writer = csv.writer(f)
-        csv_writer.writerows(test_data.images)
+        #print(dir(test_data.dataset))
+        #print(test_data.labels)
+        csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
-        testloader = DataLoader(dataset = test_data, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        evaluate(self.model, test_data.images, 1, testloader, device=self.device)
+        testloader = DataLoader(dataset = test_data.dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        evaluate(self.model, test_data.dataset.images, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
@@ -143,7 +145,7 @@ parser.add_argument('--model', default="mrcnn_model_75.pt", type=str, help="mrcn
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/dataset", args.data)
+dataset = CustomDataset("/dataset/data_1230", args.data)
 #dataset.labels = {i:dataset.labels[i] for i in range(1000)}
 #dataset.images = {i:dataset.images[i] for i in range(1000)}
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
