@@ -6,11 +6,12 @@ import numpy as np
 import cv2
 label_map = {"1": "best", "2":"normal", "3":"faulty"}
 dataset_path = "./dataset/"
+categories = {"crack":"C", "finish": "T" , "ground":"F", "living":"L", "peel":"P", "rebar":"X", "window":"W"}
 
 W, H = 1080, 1440
 W_new, H_new = 224, 224
 
-def process_dataset(data_dir):
+def process_dataset(data_dir, category):
     paths_filename = {}
 
     for root, dirs, files in tqdm(os.walk(data_dir), desc="Searching for files"):
@@ -18,7 +19,7 @@ def process_dataset(data_dir):
             #print(file)
             temp = file.split("_")
             cat, _, img_type = temp[2], temp[3], temp[4]
-            if cat == "W" and img_type == "R":
+            if cat == categories[category] and img_type == "R":
                 paths_filename[file] = os.path.join(root, file)
     
     labels_names = [f for f in paths_filename.keys() if f.endswith(".json")]
@@ -91,7 +92,8 @@ def process_dataset(data_dir):
                 
                 bbox_image = image[ymin:ymax, xmin:xmax]
                 bbox_image = cv2.resize(bbox_image, (W_new, H_new), interpolation=cv2.INTER_AREA)
-                cv2.imwrite(dataset_path + label +"/"+ filename + "_" + str(i) + ".jpg", bbox_image)
+                cv2.imwrite(dataset_path + category +"/"+ label +"/"+ filename + "_" + str(i) + ".jpg", bbox_image)
 
 
-process_dataset("/dataset/data_1230")
+for hr_category, alphabet in categories.items():
+    process_dataset("/dataset/data_1230", hr_category)
