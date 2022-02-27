@@ -29,6 +29,12 @@ def getTimestamp():
     utc_timestamp = int(time.time() + timezone)
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return date
+
+def convert_mask_to_poly(mask):
+    coords = np.column_stack(np.where(mask > 0))
+    return coords
+
+    
 def evaluate(model, image_names, epoch, data_loader, device):
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')    
     model.eval()
@@ -64,24 +70,25 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
             if class_name not in logs[image_id]:
                 logs[image_id][class_name] = {}
-                logs[image_id][class_name]["gt_masks"] = []
+                logs[image_id][class_name]["gt_polys"] = []
                 logs[image_id][class_name]['gt_label'] = []
                 logs[image_id][class_name]['label'] = []
-                logs[image_id][class_name]['masks'] = []
+                logs[image_id][class_name]['polys'] = []
                 logs[image_id][class_name]['conf'] = []
 
             for label in gt_labels:
                 logs[image_id][class_name]['gt_label'].append(decode[label.item()])
             
             for mask in gt_masks:
-                logs[image_id][class_name]["gt_masks"].append(mask)
+                poly = convert_mask_to_poly(mask)
+                logs[image_id][class_name]["gt_polys"].append(poly)
                 
             pred_result = {}
             # 같은 label 끼리 묶음
             for j, label in enumerate(labels):
                 label = label.item()
                 logs[image_id][class_name]['label'].append(decode[label])
-                logs[image_id][class_name]['masks'].append(masks[j].tolist())
+                logs[image_id][class_name]['polys'].append(convert_mask_to_poly(masks[j]))
                 logs[image_id][class_name]['conf'].append(float(scores[j]))
 
 

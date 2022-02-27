@@ -2,13 +2,23 @@ import numpy as np
 import json
 from torch import R
 from tqdm import tqdm
+import torch
+import cv2 
 
-def compute_iou(cand_mask, gt_mask):
-    # Calculate intersection areas
-    mask = cand_mask.bool().numpy()
-    true_mask = gt_mask.bool().numpy()
-    intersection = np.logical_and(mask, true_mask)
-    union = np.logical_or(mask, true_mask)
+
+W_new, H_new = 360, 480
+def compute_iou(cand_poly, gt_poly):
+    gt_mask = torch.zeros((H_new, W_new), dtype=torch.bool)
+    mask = torch.zeros((H_new, W_new), dtype=torch.bool)
+    
+    cv2.fillPoly(img=gt_mask, pts=[gt_poly], color=(1,1,1))
+    cv2.fillPoly(img=mask, pts=[cand_poly], color=(1,1,1))
+
+    gt_mask = gt_mask.bool().numpy()
+    mask = mask.bool().numpy()
+
+    intersection = np.logical_and(mask, gt_mask)
+    union = np.logical_or(mask, gt_mask)
 
     iou_score = np.sum(intersection) / np.sum(union)
     return iou_score
@@ -92,7 +102,7 @@ def write_to_excel(metrics):
                     conf_by_class[class_name].append(stats["conf"][i])
                     iou_by_class[class_name].append(stats["iou"][i])
 
-                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(convert_mask_to_poly(stats['gt_mask'][i])), str(stats['label'][i]), str(convert_mask_to_poly(stats['mask'][i])), str(stats['conf'][i]), str(stats['iou'][i])])
+                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_mask'][i]), str(stats['label'][i]), str(stats['mask'][i]), str(stats['conf'][i]), str(stats['iou'][i])])
 
                 except:
                     continue
