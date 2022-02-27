@@ -34,23 +34,14 @@ parser.add_argument("--dataset", default="./dataset", type=str, help="dataset fo
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to save")
 args = parser.parse_args()
 
+#categories = {"crack":"C", "finish": "T" , "ground":"F", "living":"L", "peel":"P", "rebar":"X", "window":"W"}
+
+
 trainset = ImageFolderWithPaths(root=args.dataset, transform=transforms, target_transform=None)
-
-#data_size = len(dataset)
-#n_train = int(data_size * 0.9)
-#n_valid = data_size
-#split_idx = np.random.choice(data_size, data_size, replace=False)
-#train_idx = split_idx
-#val_idx = split_idx[n_train:n_valid]
-
-#trainset = torch.utils.data.Subset(dataset, train_idx)
-#valset = torch.utils.data.Subset(dataset, val_idx)
 
 
 from torch.utils.data import DataLoader
 trainloader = DataLoader(trainset, batch_size=64, shuffle=True, pin_memory=True, num_workers=4)
-
-#valloader = DataLoader(valset, batch_size=128, shuffle=False, pin_memory=True, num_workers=4)
 
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -139,47 +130,12 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 if epoch_acc > best_acc and batch_idx == len(trainloader)-1:
                     best_acc = epoch_acc
                     best_model_wts = copy.deepcopy(model.state_dict())
-                    torch.save(best_model_wts, "eff_net.pt")
+                    torch.save(best_model_wts, args.model)
                     print("model saved to eff_net.pt")
     # load best model weights
     model.load_state_dict(best_model_wts)
     return model
 
-def test_model(model):
-    logs = {}
-    model.eval()
-
-    total_f1_score = 0.0
-    total_acc = 0.0
-    counts = 0
-    for inputs, labels, paths in testloader:
-        counts += 1
-        inputs = inputs.to(device)
-        labels = labels.to(device)
-       
-        # forward
-        # track history if only in train
-        with torch.set_grad_enabled(False):
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-            
-            for i, path in enumerate(paths):
-                #현재 파일에 대한 파일경로
-                logs[path] = {"pred":preds[i].item(), "true": labels[i].item()}
-
-        # statistics
-        running_corrects += torch.sum(preds == labels.data)
-
-        current_f1_score = f1_score(labels.data.cpu(), preds.cpu())
-        total_f1_score += current_f1_score
-
-        epoch_acc = running_corrects.double() / len(testset)
-        total_acc += epoch_acc
-        print('Acc: {:.4f} F1 Score: {:.4f}'.format(epoch_acc, current_f1_score))
-
-    json.dump(logs, open("efnet_logs.json", "w"))
-    print('Final average Acc and F1: {:4f} {:4f}'.format(total_acc/counts, total_f1_score/counts))
-    return model
 #%% 
 model = train_model(model=net, criterion=criterion, optimizer=optimizer, num_epochs=25)
 #model = test_model(model)

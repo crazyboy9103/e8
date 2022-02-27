@@ -35,6 +35,7 @@ def getTimestamp():
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return utc_timestamp
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
+parser.add_argument("--dataset", default="./dataset", type=str, help="dataset path")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to load from")
 args = parser.parse_args()
 
@@ -42,7 +43,7 @@ transforms = transforms.Compose([
     transforms.ToTensor()
 ])
 
-test_dir  = './dataset'
+test_dir  = args.dataset
 testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
 testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
 
@@ -195,8 +196,9 @@ def write_to_excel(logs):
             except:
                 continue
 
-    wb.save("test.xlsx")
-    print("test.xlsx saved")
+    model_name = args.model.strip(".pt")       
+    wb.save(model_name+"_test.xlsx")
+    print(model_name+"_test.xlsx saved")
 
     print(f"Eval started : {logs['start']}, Eval ended : {logs['end']}")
     for i in range(3):

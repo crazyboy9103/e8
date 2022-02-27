@@ -1,0 +1,1 @@
+python3 evaluate.py --dataset ./dataset/finish --model eff_net_finish.pt
