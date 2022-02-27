@@ -1,21 +1,17 @@
 import numpy as np 
 import json
+from torch import R
 from tqdm import tqdm
-def compute_iou(cand_box, gt_box):
+
+def compute_iou(cand_mask, gt_mask):
     # Calculate intersection areas
-    x1 = np.maximum(cand_box[0], gt_box[0])
-    y1 = np.maximum(cand_box[1], gt_box[1])
-    x2 = np.minimum(cand_box[2], gt_box[2])
-    y2 = np.minimum(cand_box[3], gt_box[3])
-    
-    intersection = np.maximum(x2 - x1, 0) * np.maximum(y2 - y1, 0)
-    
-    cand_box_area = (cand_box[2] - cand_box[0]) * (cand_box[3] - cand_box[1])
-    gt_box_area = (gt_box[2] - gt_box[0]) * (gt_box[3] - gt_box[1])
-    union = cand_box_area + gt_box_area - intersection
-    
-    iou = intersection / union
-    return iou
+    mask = cand_mask.bool().numpy()
+    true_mask = gt_mask.bool().numpy()
+    intersection = np.logical_and(mask, true_mask)
+    union = np.logical_or(mask, true_mask)
+
+    iou_score = np.sum(intersection) / np.sum(union)
+    return iou_score
 
 print("Reading detailed_metrics.json...")
 f = open("detailed_metrics.json", "r")
@@ -38,25 +34,25 @@ def analysis(metrics):
                 logs[image_name][class_name] = {}
                 logs[image_name][class_name]["gt_label"] = []
                 logs[image_name][class_name]["label"] = []
-                logs[image_name][class_name]["gt_bbox"] = []
-                logs[image_name][class_name]["bbox"] = []
+                logs[image_name][class_name]["gt_mask"] = []
+                logs[image_name][class_name]["mask"] = []
                 logs[image_name][class_name]["conf"] = []
                 logs[image_name][class_name]["iou"] = []
                 logs[image_name][class_name]["correct"] = []
                 
-            gt_bbox = stats['gt_bbox']
+            gt_mask = stats['gt_mask']
             gt_label = stats['gt_label']
-            pred_bbox = stats['bbox']
+            pred_mask = stats['mask']
             pred_label = stats['label']
             conf = stats['conf']
-            for i in range(len(gt_bbox)):
-                for j in range(len(pred_bbox)):
-                    iou = compute_iou(gt_bbox[i], pred_bbox[j])
+            for i in range(len(gt_mask)):
+                for j in range(len(pred_mask)):
+                    iou = compute_iou(gt_mask[i], pred_mask[j])
                     if iou > 0.3:
                         logs[image_name][class_name]["gt_label"].append(gt_label[i])
-                        logs[image_name][class_name]["gt_bbox"].append(gt_bbox[i])
+                        logs[image_name][class_name]["gt_mask"].append(gt_mask[i])
                         logs[image_name][class_name]["label"].append(pred_label[j])
-                        logs[image_name][class_name]['bbox'].append(pred_bbox[j])
+                        logs[image_name][class_name]['mask'].append(pred_mask[j])
                         logs[image_name][class_name]['conf'].append(conf[j])
                         logs[image_name][class_name]["iou"].append(iou)
                         logs[image_name][class_name]["correct"].append(pred_label[j] == gt_label[i])
@@ -64,6 +60,9 @@ def analysis(metrics):
 
     return logs
 
+def convert_mask_to_poly(mask):
+    coords = np.column_stack(np.where(mask > 0))
+    return coords
 def write_to_excel(metrics):
     from openpyxl import Workbook
     is_correct_by_class = {}
@@ -72,7 +71,7 @@ def write_to_excel(metrics):
 
     wb = Workbook()
     ws = wb.active
-    ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou"])
+    ws.append(["image_name", "correct", "gt_label", "gt_mask", "label", "mask", "conf", "iou"])
     for image_name, result in tqdm(analysis(metrics).items(), desc="image analysis"):
         if isinstance(result, int):
             continue
@@ -93,7 +92,7 @@ def write_to_excel(metrics):
                     conf_by_class[class_name].append(stats["conf"][i])
                     iou_by_class[class_name].append(stats["iou"][i])
 
-                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_bbox'][i]), str(stats['label'][i]), str(stats['bbox'][i]), str(stats['conf'][i]), str(stats['iou'][i])])
+                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(convert_mask_to_poly(stats['gt_mask'][i])), str(stats['label'][i]), str(convert_mask_to_poly(stats['mask'][i])), str(stats['conf'][i]), str(stats['iou'][i])])
 
                 except:
                     continue
@@ -102,6 +101,10 @@ def write_to_excel(metrics):
     mAP = 0
     mIoU = 0
     count = 0
+
+    wb.create_sheet(index=1, title="mAPandmIOU")
+    ws = wb[wb.sheetnames[1]]
+
     for class_name in is_correct_by_class:
         is_cor = is_correct_by_class[class_name]
         conf = conf_by_class[class_name]
@@ -110,10 +113,12 @@ def write_to_excel(metrics):
         class_average_iou = np.mean(ious)
         class_average_ap = average_precision_score(is_cor, conf)
 
+        ws.append([class_name, class_average_iou, class_average_ap])
         print(f"Class: {class_name}, Average IoU: {class_average_iou}, Average Precision: {class_average_ap}")
         mIoU += class_average_iou
         mAP += class_average_ap
         count += 1
+    ws.append(["Final mAP", mAP/count, "Final maskIou", mIoU/count])
     print(f"Final mAP :{mAP/count}, Final mIoU : {mIoU/count}")
     wb.save("test.xlsx")
 
