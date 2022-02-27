@@ -19,7 +19,7 @@ def process_dataset(data_dir, category):
             #print(file)
             temp = file.split("_")
             cat, _, img_type = temp[2], temp[3], temp[4]
-            if cat == categories[category] and img_type == "R":
+            if img_type == "R":
                 paths_filename[file] = os.path.join(root, file)
     
     labels_names = [f for f in paths_filename.keys() if f.endswith(".json")]
