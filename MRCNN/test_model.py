@@ -14,8 +14,11 @@ from sklearn.metrics import average_precision_score, confusion_matrix
 import csv
 class MyModel(Model):
     def test(self, dataset):
+        print("dataset len", len(dataset))
+        
         test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
         test_data = torch.utils.data.Subset(dataset, test_idx)
+        print("subset len", len(test_data))
         f = open("test_mrcnn.csv", "w", newline='')
         csv_writer = csv.writer(f)
         #print(dir(test_data.dataset))
