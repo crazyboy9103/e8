@@ -17,17 +17,19 @@ class MyModel(Model):
         print("dataset len", len(dataset))
         
         test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
-        test_data = torch.utils.data.Subset(dataset, test_idx)
-        print("subset len", len(test_data))
+        test_set = torch.utils.data.Subset(dataset, test_idx)
+        print("subset len", len(test_set))
         f = open("test_mrcnn.csv", "w", newline='')
         csv_writer = csv.writer(f)
         #print(dir(test_data.dataset))
         #print(test_data.labels)
-        csv_writer.writerows(test_data.dataset.images.values())
+        for row in test_set.dataset.images.values():
+            csv_writer.writerow([row])
+        #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
-        testloader = DataLoader(dataset = test_data.dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        evaluate(self.model, test_data.dataset.images, 1, testloader, device=self.device)
+        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        evaluate(self.model, test_set.dataset.images, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
