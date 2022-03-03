@@ -46,24 +46,27 @@ transforms = transforms.Compose([
 ])
 
 test_dir  = args.dataset
-testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
+dataset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
 model_name = args.model.strip(".pt") 
 idx_filename = f"{model_name}_idx.npy"
 
-if idx_filename in os.listdir():
-    test_idx = np.random.choice(len(testset), len(testset)//10, replace=False)
+if idx_filename not in os.listdir():
+    test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
     np.save(idx_filename, test_idx)
 else:
     test_idx = np.load(idx_filename)
 
-testset = torch.utils.data.Subset(testset, test_idx)
+testset = torch.utils.data.Subset(dataset, test_idx)
 f = open(f"test_{model_name}.csv", "w", newline='')
 csv_writer = csv.writer(f)
 testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
-filenames = [fname for fname, _ in testloader.dataset.samples]
+
+full_image_names = dataset.imgs
+filenames = [full_image_names[idx] for idx in test_idx]
+#filenames = [fname for fname, _ in testloader.dataset.samples]
 print("test filenames", filenames[0], filenames[1])
 for row in filenames:
-    csv_writer.writerow([row])
+    csv_writer.writerow([row[0]])
 f.close()
 
 PATH = args.model
@@ -74,7 +77,7 @@ def build_net(num_classes):
     net.classifier[1] = nn.Linear(num_ftrs, num_classes)
     return net
 
-net = build_net(len(testset.classes))
+net = build_net(3)
 net.load_state_dict(torch.load(PATH))
 device = torch.device("cuda:0")
 net.to(device)
@@ -84,12 +87,11 @@ net.eval()
 #print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
 
 logs = {"start":getTimestamp()}
-stats_by_class = {testset.classes[i]:{"correct":0, "total":0} for i in range(3)} #11 classes
-labels_by_class = {testset.classes[i]:[] for i in range(3)}
-preds_by_class = {testset.classes[i]:[] for i in range(3)}
+stats_by_class = {dataset.classes[i]:{"correct":0, "total":0} for i in range(3)} #11 classes
+labels_by_class = {dataset.classes[i]:[] for i in range(3)}
+preds_by_class = {dataset.classes[i]:[] for i in range(3)}
 
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-image_names = list(map(lambda img: img[0], testset.imgs))
 with torch.no_grad(): 
     for img_idx, (image, label, path) in enumerate(tqdm(testloader, desc="evaluating")): 
         output = net(image.to(device))
@@ -97,8 +99,8 @@ with torch.no_grad():
         _, predicted = torch.max(output, 1) 
         path = path[0] 
         img_name = path
-        temp_label = testset.classes[label.item()]
-        temp_predict = testset.classes[predicted.item()]
+        temp_label = dataset.classes[label.item()]
+        temp_predict = dataset.classes[predicted.item()]
         is_correct = temp_label == temp_predict
         stats_by_class[temp_label]["total"] += 1
         stats_by_class[temp_label]["correct"] += int(is_correct)
@@ -129,26 +131,26 @@ with torch.no_grad():
         if img_idx % 5000 == 0:
             str_buffer = f"== Image Index {img_idx}=="
             for i in range(3):
-                labels = labels_by_class[testset.classes[i]]
-                preds = preds_by_class[testset.classes[i]]
+                labels = labels_by_class[dataset.classes[i]]
+                preds = preds_by_class[dataset.classes[i]]
                 try:
                     acc = accuracy_score(labels, preds)
                     f1 = f1_score(labels, preds, average="weighted")
-                    str_stats = f"Class {testset.classes[i]}, Accuracy:{acc}, F1: {f1}"
+                    str_stats = f"Class {dataset.classes[i]}, Accuracy:{acc}, F1: {f1}"
                     str_buffer = f"{str_buffer}\n{str_stats}\n"
                 except: 
-                    str_stats = f"Class {testset.classes[i]}, Accuracy:NaN, F1: NaN"
+                    str_stats = f"Class {dataset.classes[i]}, Accuracy:NaN, F1: NaN"
                     str_buffer = f"{str_buffer}\n{str_stats}\n"
             
             print(str_buffer)
     logs["class_stats"] = {}
     for i in range(3):
-        labels = labels_by_class[testset.classes[i]]
-        preds = preds_by_class[testset.classes[i]]
-        logs["class_stats"][testset.classes[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="weighted")}
+        labels = labels_by_class[dataset.classes[i]]
+        preds = preds_by_class[dataset.classes[i]]
+        logs["class_stats"][dataset.classes[i]] = {"acc": accuracy_score(labels, preds), "f1":f1_score(labels, preds, average="weighted")}
     
-    mean_acc = np.mean(list(logs["class_stats"][testset.classes[i]]["acc"] for i in range(3)))
-    mean_f1 = np.mean(list(logs["class_stats"][testset.classes[i]]["f1"] for i in range(3)))
+    mean_acc = np.mean(list(logs["class_stats"][dataset.classes[i]]["acc"] for i in range(3)))
+    mean_f1 = np.mean(list(logs["class_stats"][dataset.classes[i]]["f1"] for i in range(3)))
 
     logs["final_stats"] = {"mean_acc":mean_acc, "mean_f1":mean_f1}
 
@@ -211,7 +213,7 @@ def write_to_excel(logs):
 
     print(f"Eval started : {logs['start']}, Eval ended : {logs['end']}")
     for i in range(3):
-        print(f"Class {testset.classes[i]}, Accuracy: {logs['class_stats'][testset.classes[i]]['acc']}, F1: {logs['class_stats'][testset.classes[i]]['f1']}")
+        print(f"Class {dataset.classes[i]}, Accuracy: {logs['class_stats'][dataset.classes[i]]['acc']}, F1: {logs['class_stats'][dataset.classes[i]]['f1']}")
 
     print(f"Final mean Acc : {logs['final_stats']['mean_acc']}, mean F1 : {logs['final_stats']['mean_f1']}")
 
