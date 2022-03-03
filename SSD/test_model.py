@@ -28,16 +28,17 @@ class MyModel(Model):
         #print(dir(test_data.dataset))
         #print(test_data.labels)
         testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-
-        filenames = [fname for fname, _ in testloader.dataset.samples]
+        full_image_names = dataset.imgs
+        filenames = [full_image_names[idx] for idx in test_idx]
+        #filenames = [fname for fname, _ in testloader.dataset.samples]
         print("test filenames", filenames[0], filenames[1])
         for row in filenames:
-            csv_writer.writerow([row])
+            csv_writer.writerow([row[0]])
         #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
         #testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        evaluate(self.model, testloader.dataset.samples, 1, testloader, device=self.device)
+        evaluate(self.model, filenames, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
