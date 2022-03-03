@@ -11,6 +11,8 @@ import torch.nn as nn
 import argparse
 import json
 from tqdm import tqdm
+import os 
+import csv
 
 class ImageFolderWithPaths(ImageFolder):
     """Custom dataset that includes image file paths. Extends
@@ -45,19 +47,26 @@ transforms = transforms.Compose([
 
 test_dir  = args.dataset
 testset = ImageFolderWithPaths(root=test_dir, transform=transforms, target_transform=None)
+model_name = args.model.strip(".pt") 
+idx_filename = f"{model_name}_idx.npy"
+
+if idx_filename in os.listdir():
+    test_idx = np.random.choice(len(testset), len(testset)//10, replace=False)
+    np.save(idx_filename, test_idx)
+else:
+    test_idx = np.load(idx_filename)
+
+testset = torch.utils.data.Subset(testset, test_idx)
+f = open(f"test_{model_name}.csv", "w", newline='')
+csv_writer = csv.writer(f)
 testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
+filenames = [fname for fname, _ in testloader.dataset.samples]
+print("test filenames", filenames[0], filenames[1])
+for row in filenames:
+    csv_writer.writerow([row])
+f.close()
 
 PATH = args.model
-dataiter = iter(testloader) 
-images, labels, paths = dataiter.next() # 실험용 데이터와 결과 출력 
-def imsave(img):
-    npimg = img.numpy()
-    plt.figure(1, figsize=(12, 12))
-    plt.imshow(np.transpose(npimg, (1,2,0)))
-    plt.savefig("evaluate.png", dpi=600)
-    plt.clf()
-imsave(torchvision.utils.make_grid(images)) 
-print('GroundTruth: ', ' '.join('%5s' % testset.classes[label] for label in labels)) # 학습한 모델로 예측값 뽑아보기 
 
 def build_net(num_classes):
     net = models.efficientnet_b0(pretrained=True)
