@@ -7,11 +7,12 @@ import cv2
 label_map = {"1": "best", "2":"normal", "3":"faulty"}
 dataset_path = "./dataset/"
 categories = {"crack":"C", "finish": "T" , "ground":"F", "living":"L", "peel":"P", "rebar":"X", "window":"W"}
+categories_alpha_to_hr = {v:k for k, v in categories.items()}
 
 W, H = 1080, 1440
 W_new, H_new = 224, 224
 
-def process_dataset(data_dir, category):
+def process_dataset(data_dir):
     paths_filename = {}
 
     for root, dirs, files in tqdm(os.walk(data_dir), desc="Searching for files"):
@@ -19,7 +20,8 @@ def process_dataset(data_dir, category):
             #print(file)
             temp = file.split("_")
             cat, _, img_type = temp[2], temp[3], temp[4]
-            if img_type == "R":
+            hr_label = categories_alpha_to_hr[cat]
+            if img_type == "R" and hr_label in ["crack", "peel", "rebar"]:
                 paths_filename[file] = os.path.join(root, file)
     
     labels_names = [f for f in paths_filename.keys() if f.endswith(".json")]
@@ -71,29 +73,42 @@ def process_dataset(data_dir, category):
 
         annotations = json_data['Annotations']
         json_id = json_data['Json_Data_ID']
-        _, _, _, cls, _, _  = json_id.split("_")
+        _, _, cat, cls, img_type, _  = json_id.split("_")
 
         # cat must be "W"
         # cls must be "1, 2, 3" : "best, normal, faulty"
-        if img_type == "R":
+        if img_type != "R":
             continue
-    
+        
+        if cat not in categories.values():
+            continue
+        
+        hr_label = categories_alpha_to_hr[cat]
         image = cv2.imread(img, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         filename = img.split("/")[-1].split(".jpg")[0]
         for i, ant in enumerate(annotations):
             ant_type = ant['Type']
             label = label_map[cls]
-            if ant_type == "bbox":
-                xmin, ymin, xmax, ymax = ant[ant_type]
+            #if ant_type == "bbox":
+            #    xmin, ymin, xmax, ymax = ant[ant_type]
              
+            #    if xmin == xmax or ymin == ymax:
+            #        continue
+                
+            #    bbox_image = image[ymin:ymax, xmin:xmax]
+            #    bbox_image = cv2.resize(bbox_image, (W_new, H_new), interpolation=cv2.INTER_AREA)
+            #    cv2.imwrite(dataset_path + hr_label +"/"+ label +"/"+ filename + "_" + str(i) + ".jpg", bbox_image)
+            if ant_type == "polygon":
+                temp_arr = np.array(ant[ant_type]).reshape(len(ant[ant_type])//2, 2)
+                xmin, ymin = np.min(temp_arr, axis=0)
+                xmax, ymax = np.max(temp_arr, axis=0)
+                    
                 if xmin == xmax or ymin == ymax:
                     continue
                 
                 bbox_image = image[ymin:ymax, xmin:xmax]
                 bbox_image = cv2.resize(bbox_image, (W_new, H_new), interpolation=cv2.INTER_AREA)
-                cv2.imwrite(dataset_path + category +"/"+ label +"/"+ filename + "_" + str(i) + ".jpg", bbox_image)
+                cv2.imwrite(dataset_path + hr_label + "/" + label + "/" + filename + "_" + str(i) + ".jpg", bbox_image)
 
-
-for hr_category, alphabet in categories.items():
-    process_dataset("/dataset/data_1230", hr_category)
+process_dataset("/dataset/data_1230")

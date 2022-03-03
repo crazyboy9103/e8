@@ -137,7 +137,7 @@ def train_model(model, criterion, optimizer, num_epochs=25):
     return model
 
 #%% 
-model = train_model(model=net, criterion=criterion, optimizer=optimizer, num_epochs=25)
+model = train_model(model=net, criterion=criterion, optimizer=optimizer, num_epochs=5)
 #model = test_model(model)
 print('Finished Training')
 #torch.save(model.state_dict(), args.model)
