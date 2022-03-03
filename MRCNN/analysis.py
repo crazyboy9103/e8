@@ -44,25 +44,25 @@ def analysis(metrics):
                 logs[image_name][class_name] = {}
                 logs[image_name][class_name]["gt_label"] = []
                 logs[image_name][class_name]["label"] = []
-                logs[image_name][class_name]["gt_mask"] = []
-                logs[image_name][class_name]["mask"] = []
+                logs[image_name][class_name]["gt_polys"] = []
+                logs[image_name][class_name]["polys"] = []
                 logs[image_name][class_name]["conf"] = []
                 logs[image_name][class_name]["iou"] = []
                 logs[image_name][class_name]["correct"] = []
                 
-            gt_mask = stats['gt_mask']
+            gt_polys = stats['gt_polys']
             gt_label = stats['gt_label']
-            pred_mask = stats['mask']
+            pred_polys = stats['polys']
             pred_label = stats['label']
             conf = stats['conf']
-            for i in range(len(gt_mask)):
-                for j in range(len(pred_mask)):
-                    iou = compute_iou(gt_mask[i], pred_mask[j])
+            for i in range(len(gt_polys)):
+                for j in range(len(pred_polys)):
+                    iou = compute_iou(gt_polys[i], pred_polys[j])
                     if iou > 0.3:
                         logs[image_name][class_name]["gt_label"].append(gt_label[i])
-                        logs[image_name][class_name]["gt_mask"].append(gt_mask[i])
                         logs[image_name][class_name]["label"].append(pred_label[j])
-                        logs[image_name][class_name]['mask'].append(pred_mask[j])
+                        logs[image_name][class_name]["gt_polys"].append(gt_polys[i])
+                        logs[image_name][class_name]['polys'].append(pred_polys[j])
                         logs[image_name][class_name]['conf'].append(conf[j])
                         logs[image_name][class_name]["iou"].append(iou)
                         logs[image_name][class_name]["correct"].append(pred_label[j] == gt_label[i])
@@ -81,7 +81,7 @@ def write_to_excel(metrics):
 
     wb = Workbook()
     ws = wb.active
-    ws.append(["image_name", "correct", "gt_label", "gt_mask", "label", "mask", "conf", "iou"])
+    ws.append(["image_name", "correct", "gt_label", "gt_poly", "label", "poly", "conf", "iou"])
     for image_name, result in tqdm(analysis(metrics).items(), desc="image analysis"):
         if isinstance(result, int):
             continue
@@ -102,7 +102,7 @@ def write_to_excel(metrics):
                     conf_by_class[class_name].append(stats["conf"][i])
                     iou_by_class[class_name].append(stats["iou"][i])
 
-                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_mask'][i]), str(stats['label'][i]), str(stats['mask'][i]), str(stats['conf'][i]), str(stats['iou'][i])])
+                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_polys'][i]), str(stats['label'][i]), str(stats['polys'][i]), str(stats['conf'][i]), str(stats['iou'][i])])
 
                 except:
                     continue

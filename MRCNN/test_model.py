@@ -6,7 +6,7 @@ label_map = json.load(open("labels.json", "r"))
 decode = {}
 for k, v in label_map.items():
     decode[v] = k
-
+import os 
 import numpy as np
 import torch
 import utils
@@ -14,17 +14,30 @@ from sklearn.metrics import average_precision_score, confusion_matrix
 import csv
 class MyModel(Model):
     def test(self, dataset):
-        test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
-        test_data = torch.utils.data.Subset(dataset, test_idx)
+        print("dataset len", len(dataset))
+        if "test_idx.npy" not in os.listdir():
+            test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
+            np.save("test_idx.npy", test_idx)
+        else:
+            test_idx = np.load("test_idx.npy")
+
+        test_set = torch.utils.data.Subset(dataset, test_idx)
+        print("subset len", len(test_set))
         f = open("test_mrcnn.csv", "w", newline='')
         csv_writer = csv.writer(f)
         #print(dir(test_data.dataset))
         #print(test_data.labels)
-        csv_writer.writerows(test_data.dataset.images.values())
+        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+
+        filenames = [fname for fname, _ in testloader.dataset.samples]
+        print("test filenames", filenames[0], filenames[1])
+        for row in filenames:
+            csv_writer.writerow([row])
+        #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
-        testloader = DataLoader(dataset = test_data.dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        evaluate(self.model, test_data.dataset.images, 1, testloader, device=self.device)
+        #testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        evaluate(self.model, testloader.dataset.samples, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
