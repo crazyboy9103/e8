@@ -180,17 +180,27 @@ def write_to_excel(logs):
     n_tn, n_fp, n_fn, n_tp = norm_conf.ravel()
     f_tn, f_fp, f_fn, f_tp = fault_conf.ravel()
     
+    b_prec, b_recall = b_tp/(b_tp+b_fp), b_tp/(b_tp+b_fn)
+    b_f1 = 2 * (b_prec * b_recall)/(b_prec + b_recall)
+    b_acc = (b_tp+b_tn) / (b_tp+b_tn+b_fp+b_fn)
+    
+    n_prec, n_recall = n_tp/(n_tp+n_fp), n_tp/(n_tp+n_fn)
+    n_f1 = 2 * (n_prec * n_recall)/(n_prec + n_recall)
+    n_acc = (n_tp+n_tn) / (n_tp+n_tn+n_fp+n_fn)
+
+    f_prec, f_recall = f_tp/(f_tp+f_fp), f_tp/(f_tp+f_fn)
+    f_f1 = 2 * (f_prec * f_recall)/(f_prec + f_recall)
+    f_acc = (f_tp+f_tn) / (f_tp+f_tn+f_fp+f_fn)
     
     wb = Workbook()
     ws = wb.active
 
-    ws.append(["best_tn", "best_fp", "best_fn", "best_tp"])
-    ws.append([b_tn, b_fp, b_fn, b_tp])
-    ws.append(["normal_tn", "normal_fp", "normal_fn", "normal_tp"])
-    ws.append([n_tn, n_fp, n_fn, n_tp])
-    ws.append(["faulty_tn", "faulty_fp", "faulty_fn", "faulty_tp"])
-    ws.append([f_tn, f_fp, f_fn, f_tp])
-
+    ws.append(["best_tn", "best_fp", "best_fn", "best_tp", "best_acc", "best_f1"])
+    ws.append([b_tn, b_fp, b_fn, b_tp, b_acc, b_f1])
+    ws.append(["normal_tn", "normal_fp", "normal_fn", "normal_tp", "normal_acc", "normal_f1"])
+    ws.append([n_tn, n_fp, n_fn, n_tp, n_acc, n_f1])
+    ws.append(["faulty_tn", "faulty_fp", "faulty_fn", "faulty_tp", "faulty_acc", "faulty_f1"])
+    ws.append([f_tn, f_fp, f_fn, f_tp, f_acc, f_f1])
     ws.append(["image_name", "predict", "label", "cumul_correct", "cumul_total"])
     #ws.append(["image_name", "predict", "label", "cumul_precision", "cumul_recall", "cumul_f1", "cumul_correct", "cumul_total"])
     for key, value in logs.items():
