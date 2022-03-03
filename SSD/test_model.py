@@ -14,8 +14,30 @@ from sklearn.metrics import average_precision_score, confusion_matrix
 
 class MyModel(Model):
     def test(self, dataset):
-        testloader = DataLoader(dataset = dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        evaluate(self.model, dataset.images, 1, testloader, device=self.device)
+        print("dataset len", len(dataset))
+        if "test_idx.npy" not in os.listdir():
+            test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
+            np.save("test_idx.npy", test_idx)
+        else:
+            test_idx = np.load("test_idx.npy")
+
+        test_set = torch.utils.data.Subset(dataset, test_idx)
+        print("subset len", len(test_set))
+        f = open("test_ssd.csv", "w", newline='')
+        csv_writer = csv.writer(f)
+        #print(dir(test_data.dataset))
+        #print(test_data.labels)
+        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+
+        filenames = [fname for fname, _ in testloader.dataset.samples]
+        print("test filenames", filenames[0], filenames[1])
+        for row in filenames:
+            csv_writer.writerow([row])
+        #csv_writer.writerows(test_data.dataset.images.values())
+        f.close()
+        print("test dataset list saved 'test_mrcnn.csv'")
+        #testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        evaluate(self.model, testloader.dataset.samples, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
