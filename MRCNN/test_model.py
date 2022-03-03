@@ -28,12 +28,12 @@ class MyModel(Model):
         #print(dir(test_data.dataset))
         #print(test_data.labels)
         testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        full_image_names = dataset.imgs
+        full_image_names = dataset.images
         filenames = [full_image_names[idx] for idx in test_idx]
         #filenames = [fname for fname, _ in testloader.dataset.samples]
         print("test filenames", filenames[0], filenames[1])
         for row in filenames:
-            csv_writer.writerow([row[0]])
+            csv_writer.writerow([row])
         #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
@@ -48,6 +48,7 @@ def getTimestamp():
 
 def convert_mask_to_poly(mask):
     coords = np.column_stack(np.where(mask > 0))
+    coords = coords.tolist()
     return coords
 
     
@@ -64,7 +65,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
     for batch_idx, (images, targets) in enumerate(metric_logger.log_every(data_loader, 100, header)):
         images = list(img.to(device) for img in images)
         preds = model(images)
-        images_names = [image_names[j] for j in range(batch_idx * 8, (batch_idx+1) * 8) if j in image_names]
+        images_names = [image_names[j] for j in range(batch_idx * 8, (batch_idx+1) * 8) if j < len(image_names)]
         for i, image in enumerate(images):
             pred = preds[i]
             masks = pred['masks'].detach().cpu()

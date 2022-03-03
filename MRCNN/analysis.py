@@ -10,7 +10,8 @@ W_new, H_new = 360, 480
 def compute_iou(cand_poly, gt_poly):
     gt_mask = torch.zeros((H_new, W_new), dtype=torch.bool)
     mask = torch.zeros((H_new, W_new), dtype=torch.bool)
-    
+    gt_poly = np.array(gt_poly).reshape(len(gt_poly)//2, 2) 
+    cand_poly = np.array(cand_poly).reshape(len(cand_poly)//2, 2)
     cv2.fillPoly(img=gt_mask, pts=[gt_poly], color=(1,1,1))
     cv2.fillPoly(img=mask, pts=[cand_poly], color=(1,1,1))
 
