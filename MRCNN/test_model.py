@@ -25,19 +25,13 @@ class MyModel(Model):
         print("subset len", len(test_set))
         f = open("test_mrcnn.csv", "w", newline='')
         csv_writer = csv.writer(f)
-        #print(dir(test_data.dataset))
-        #print(test_data.labels)
-        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=0, collate_fn=collate_fn)
         full_image_names = dataset.images
         filenames = [full_image_names[idx] for idx in test_idx]
-        #filenames = [fname for fname, _ in testloader.dataset.samples]
-        print("test filenames", filenames[0], filenames[1])
         for row in filenames:
             csv_writer.writerow([row])
-        #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
-        #testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         evaluate(self.model, filenames, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
@@ -47,14 +41,20 @@ def getTimestamp():
     return date
 
 def convert_mask_to_poly(mask):
+    if len(mask.shape) == 3:
+        mask = torch.squeeze(mask)
+    mask = mask.numpy()
+    #print("mask", mask.shape)
     coords = np.column_stack(np.where(mask > 0))
+    #print("coords", coords.shape)
     coords = coords.tolist()
     return coords
 
-    
+import sys
 def evaluate(model, image_names, epoch, data_loader, device):
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')    
     model.eval()
+    model.to(device)
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
@@ -62,7 +62,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
     IOUs = {}
     APs = {}
     #accs = {}
-    for batch_idx, (images, targets) in enumerate(metric_logger.log_every(data_loader, 100, header)):
+    for batch_idx, (images, targets) in enumerate(metric_logger.log_every(data_loader, 20, header)):
         images = list(img.to(device) for img in images)
         preds = model(images)
         images_names = [image_names[j] for j in range(batch_idx * 8, (batch_idx+1) * 8) if j < len(image_names)]
@@ -97,8 +97,8 @@ def evaluate(model, image_names, epoch, data_loader, device):
                 logs[image_id][class_name]['gt_label'].append(decode[label.item()])
             
             for mask in gt_masks:
-                poly = convert_mask_to_poly(mask)
-                logs[image_id][class_name]["gt_polys"].append(poly)
+                #poly = convert_mask_to_poly(mask)
+                logs[image_id][class_name]["gt_polys"].append(convert_mask_to_poly(mask))
                 
             pred_result = {}
             # 같은 label 끼리 묶음
@@ -107,58 +107,18 @@ def evaluate(model, image_names, epoch, data_loader, device):
                 logs[image_id][class_name]['label'].append(decode[label])
                 logs[image_id][class_name]['polys'].append(convert_mask_to_poly(masks[j]))
                 logs[image_id][class_name]['conf'].append(float(scores[j]))
-
-
-#                if label in pred_result:
-#                    pred_result[label]['scores'].append(float(scores[j]))
-#                    pred_result[label]['masks'].append(masks[j])
-#                else:
-#                    pred_result[label]={'scores':[float(scores[j])], 'masks':[masks[j]]}
-
-         # 마스크 N * W * H 텐서로 묶음
-            # for label, output in pred_result.items():
-            #     N = len(output['scores'])             
-            #     temp_masks = torch.zeros((N, 480, 360), dtype=torch.bool)
-
-            #     for k, mask in enumerate(output['masks']):
-            #         temp_masks[k, :, :] = mask.bool()
-
-            #     pred_result[label]['masks'] = temp_masks
-            
-            # 
-            # for j, (label, output) in enumerate(pred_result.items()):
-            #     temp_masks = [gt_mask for gt_mask, gt_label in zip(gt_masks, gt_labels) if label == gt_label]
+           
+        
+            del masks, gt_masks
+        del images, preds
                 
-            #     #skip if no gt mask 
-            #     if not temp_masks:
-            #         continue
-                
-            #     gt_label_masks = torch.zeros((len(temp_masks), 480, 360), dtype=torch.bool)
-            #     for k, mask in enumerate(temp_masks):
-            #         gt_label_masks[k, :, :] = mask
-
-                
-            
-            #     for mask in temp_masks:
-            #         mask = mask.bool().numpy()
-            #         for gt_mask in output['masks'].numpy():
-            #             intersection = np.logical_and(mask, gt_mask)
-            #             union = np.logical_or(mask, gt_mask)
-
-            #             iou_score = np.sum(intersection) / np.sum(union)
-                        
-            #             logs[image_id][class_name]['maskiou'] = []
-
-            #             if iou_score > 0.2:
-            #                 logs[]
-
     logs["end"]=getTimestamp()
     import json
     with open(f"detailed_metrics.json", "w") as f:
         json.dump(logs, f, ensure_ascii=False)
     
     # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
+    #metric_logger.synchronize_between_processes()
 
 import argparse
 parser = argparse.ArgumentParser(description='test')
