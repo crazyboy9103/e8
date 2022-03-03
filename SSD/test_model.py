@@ -11,7 +11,7 @@ import numpy as np
 import torch
 import utils
 from sklearn.metrics import average_precision_score, confusion_matrix
-
+import csv
 class MyModel(Model):
     def test(self, dataset):
         print("dataset len", len(dataset))
@@ -36,7 +36,7 @@ class MyModel(Model):
             csv_writer.writerow([row])
         #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
-        print("test dataset list saved 'test_mrcnn.csv'")
+        print("test dataset list saved 'test_ssd.csv'")
         #testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         evaluate(self.model, filenames, 1, testloader, device=self.device)
 def getTimestamp():
@@ -178,7 +178,7 @@ parser.add_argument('--model', default="ssd_model_110.pt", type=str, help="ssd_m
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/dataset", args.data)
+dataset = CustomDataset("/dataset/data_1230", args.data)
 #dataset.labels = {i:dataset.labels[i] for i in range(1000)}
 #dataset.images = {i:dataset.images[i] for i in range(1000)}
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=128, parallel=False) # if there is no ckpt to load, pass model_name=None 

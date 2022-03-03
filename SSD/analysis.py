@@ -28,7 +28,8 @@ def analysis(metrics):
     logs = {}
     print(f"Eval started : {metrics['start']}, Eval ended : {metrics['end']}")
     for image_name, result in tqdm(metrics.items(), desc="reading image result"):
-        if isinstance(result, int):
+        #print(result)
+        if isinstance(result, int) or isinstance(result, str):
             continue
         if image_name not in logs:
             logs[image_name] = {}
@@ -72,9 +73,12 @@ def write_to_excel(metrics):
 
     wb = Workbook()
     ws = wb.active
+    ws.append(['start', 'end'])
+    ws.append([metrics['start'], metrics['end']])
     ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou", "cumul_average_iou", "cumul_average_ap"])
     for image_name, result in tqdm(analysis(metrics).items(), desc="image analysis"):
-        if isinstance(result, int):
+        #print("result", result)
+        if isinstance(result, int) or isinstance(result, str):
             continue
 
         for class_name, stats in result.items():
