@@ -1,0 +1,1 @@
+sh test_crack.sh && sh test_finish.sh && sh test_ground.sh && sh test_living.sh && sh test_peel.sh && sh test_rebar.sh && sh test_window.sh 

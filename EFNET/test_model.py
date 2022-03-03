@@ -54,6 +54,8 @@ net.eval()
 
 
 seen_labels = []
+
+model_label = PATH.strip(".pt")
 for image, label, path in testloader:
     if len(seen_labels) == 3:
         break
@@ -68,7 +70,7 @@ for image, label, path in testloader:
         plt.axis('off')
         plt.title(f"label_{label}_pred_{pred}")
         plt.imshow(np.transpose(npimg, (1, 2, 0)))
-        plt.savefig(f"label_{label}_pred_{pred}.png", dpi=600)
+        plt.savefig(f"{model_label}_label_{label}_pred_{pred}.png", dpi=600)
         plt.clf()
 
 
