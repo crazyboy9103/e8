@@ -25,7 +25,7 @@ class MyModel(Model):
         print("subset len", len(test_set))
         f = open("test_mrcnn.csv", "w", newline='')
         csv_writer = csv.writer(f)
-        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=0, collate_fn=collate_fn)
+        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         full_image_names = dataset.images
         filenames = [full_image_names[idx] for idx in test_idx]
         for row in filenames:
@@ -39,7 +39,22 @@ def getTimestamp():
     utc_timestamp = int(time.time() + timezone)
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return date
+def compute_iou(cand_mask, gt_mask):
+    #gt_mask = torch.zeros((H_new, W_new), dtype=torch.bool)
+    #mask = torch.zeros((H_new, W_new), dtype=torch.bool)
+    #gt_poly = np.array(gt_poly).reshape(len(gt_poly)//2, 2)
+    #cand_poly = np.array(cand_poly).reshape(len(cand_poly)//2, 2)
+    #cv2.fillPoly(img=gt_mask, pts=[gt_poly], color=(1,1,1))
+    #cv2.fillPoly(img=mask, pts=[cand_poly], color=(1,1,1))
 
+    gt_mask = gt_mask.bool().numpy()
+    mask = cand_mask.bool().numpy()
+
+    intersection = np.logical_and(mask, gt_mask)
+    union = np.logical_or(mask, gt_mask)
+
+    iou_score = np.sum(intersection) / np.sum(union)
+    return iou_score
 def convert_mask_to_poly(mask):
     if len(mask.shape) == 3:
         mask = torch.squeeze(mask)
@@ -87,30 +102,42 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
             if class_name not in logs[image_id]:
                 logs[image_id][class_name] = {}
-                logs[image_id][class_name]["gt_polys"] = []
+                #logs[image_id][class_name]["gt_polys"] = []
                 logs[image_id][class_name]['gt_label'] = []
                 logs[image_id][class_name]['label'] = []
-                logs[image_id][class_name]['polys'] = []
+                #logs[image_id][class_name]['polys'] = []
                 logs[image_id][class_name]['conf'] = []
+                logs[image_id][class_name]['iou'] = []
+                logs[image_id][class_name]['correct'] = []
 
-            for label in gt_labels:
-                logs[image_id][class_name]['gt_label'].append(decode[label.item()])
+            #for label in gt_labels:
+            #    logs[image_id][class_name]['gt_label'].append(decode[label.item()])
             
-            for mask in gt_masks:
+            #for mask in gt_masks:
                 #poly = convert_mask_to_poly(mask)
-                logs[image_id][class_name]["gt_polys"].append(convert_mask_to_poly(mask))
-                
-            pred_result = {}
+                #logs[image_id][class_name]["gt_polys"].append(convert_mask_to_poly(mask))
+            
+            for j, gt_mask in enumerate(gt_masks):
+                for k, mask in enumerate(masks):
+                    iou = compute_iou(mask, gt_mask)
+                    if iou > 0.3:
+                       logs[image_id][class_name]['iou'].append(iou)
+                       logs[image_id][class_name]['correct'].append(gt_label == labels[k].item())
+                       logs[image_id][class_name]['gt_label'].append(decode[gt_label])
+                       logs[image_id][class_name]['label'].append(decode[labels[k].item()])
+                       logs[image_id][class_name]['conf'].append(float(scores[k]))
+
+            #pred_result = {}
             # 같은 label 끼리 묶음
-            for j, label in enumerate(labels):
-                label = label.item()
-                logs[image_id][class_name]['label'].append(decode[label])
-                logs[image_id][class_name]['polys'].append(convert_mask_to_poly(masks[j]))
-                logs[image_id][class_name]['conf'].append(float(scores[j]))
-           
+            #for j, label in enumerate(labels):
+            #    label = label.item()
+            #    logs[image_id][class_name]['label'].append(decode[label])
+                #logs[image_id][class_name]['polys'].append(convert_mask_to_poly(masks[j]))
+            #    logs[image_id][class_name]['conf'].append(float(scores[j]))
+                    
         
-            del masks, gt_masks
-        del images, preds
+            #del masks, gt_masks
+        #del images, preds
                 
     logs["end"]=getTimestamp()
     import json
