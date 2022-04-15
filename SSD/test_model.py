@@ -131,19 +131,19 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
                 box_iou = torchvision.ops.box_iou(output['boxes'], gt_label_boxes)
 
-                box_iou_d1 = torch.max(box_iou, dim=1)
+                box_iou_d1 = torch.max(box_iou, dim=1) #nms
                 pred_classes = []
                  
                 for temp_iou in box_iou_d1.values:
                     temp_iou = float(temp_iou)
+                    if label in IOUs:
+                        IOUs[label].append(temp_iou)
+                    else:
+                        IOUs[label] = [temp_iou]
+
                     if temp_iou > 0.5:
                         pred_classes.append(True)
                         #logs[image_id][class_name][j]["IOU"] = temp_iou
-                        if label in IOUs:
-                            IOUs[label].append(temp_iou)
-                        else:
-                            IOUs[label] = [temp_iou]
-
                     else:
                         pred_classes.append(False)
 

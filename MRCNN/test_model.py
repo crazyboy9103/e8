@@ -120,12 +120,15 @@ def evaluate(model, image_names, epoch, data_loader, device):
             for j, gt_mask in enumerate(gt_masks):
                 for k, mask in enumerate(masks):
                     iou = compute_iou(mask, gt_mask)
-                    if iou > 0.3:
-                       logs[image_id][class_name]['iou'].append(iou)
+                    logs[image_id][class_name]['iou'].append(iou)
+                    logs[image_id][class_name]['gt_label'].append(decode[gt_label])
+                    logs[image_id][class_name]['label'].append(decode[labels[k].item()])
+                    logs[image_id][class_name]['conf'].append(float(scores[k]))
+                    if iou > 0.5:
                        logs[image_id][class_name]['correct'].append(gt_label == labels[k].item())
-                       logs[image_id][class_name]['gt_label'].append(decode[gt_label])
-                       logs[image_id][class_name]['label'].append(decode[labels[k].item()])
-                       logs[image_id][class_name]['conf'].append(float(scores[k]))
+                       
+                    else:
+                       logs[image_id][class_name]['correct'].append(False)
 
             #pred_result = {}
             # 같은 label 끼리 묶음

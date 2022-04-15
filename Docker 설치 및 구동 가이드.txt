@@ -1,0 +1,113 @@
+도커 이미지 다운로드 방법
+==============================================================================
+1. 아래의 링크를 통해 Docker를 다운로드 (우분투 대상 가이드)
+  https://docs.docker.com/engine/install/ubuntu/
+
+
+2. Docker 설치가 완료되면 터미널에 아래의 명령어를 입력하여 Docker 이미지 다운로드
+  docker pull crazyboy9103/e8ight-docker:final
+
+혹은 
+
+2. 주어진 Dockerfile 을 가지고 이미지를 생성
+  mkdir docker && docker build --network=host -t e8 docker/
+
+
+도커 이미지 실행 방법
+==============================================================================
+3. Docker 이미지 구동
+  docker run --gpus all --name e8 --mount type=bind,source={source_data},target={target_dir} --network=host --ipc=host -i -t --shm-size=10G crazyboy9103/e8ight-docker:final
+
+  예를 들어, 로컬 컴퓨터에 데이터셋이 /dataset 폴더 내에 저장되어 있으면, 아래의 명령어를 입력하여 Docker 컨테이너 실행
+  docker run --gpus all --name e8 --mount type=bind,source=/dataset,target=/dataset --network=host --ipc=host -i -t --shm-size=10G crazyboy9103/e8ight-docker:final
+
+
+4. 3을 실행하면 자동으로 e8라는 컨테이너가 실행되므로 아래의 명령어로 컨테이너에 접속
+  docker attach e8 
+
+  컨테이너가 실행중이 아니면 아래를 입력하여 컨테이너에 접속
+  docker start e8 && docker attach e8
+
+  접속 후 아래 명령어를 통해 최신버전의 코드를 받아옴 
+  git pull
+
+
+5. 컨테이너에 접속하면 각 모델에 해당하는 폴더가 있음 
+  MRCNN - Mask R-CNN 폴더
+  SSD - SSD 폴더 
+  EFNET - EfficientNet 폴더
+
+인공지능 모델
+==============================================================================
+6. 객체 인식 모델 
+  6.1. Mask R-CNN
+    6.1.1. 학습 방법
+      cd /e8/MRCNN  
+      python3 train.py --dir "도커 상 데이터셋 경로" --data "생성할 데이터셋 파일의 경로" 혹은 "이미 존재하는 데이터셋 파일의 경로" --model "학습을 재개할 모델 파일의 경로" --epoch "학습할 에폭 수" --batch "학습할 배치 크기"
+
+      e.g. python3 train.py --dir /dataset --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 10 --batch 8
+
+    6.1.2. 테스트 방법
+      cd /e8/MRCNN 
+      python3 test_model.py --data "데이터셋 파일의 경로" --model "모델 파일의 경로"
+    
+      e.g. python3 test_model.py --data mrcnn_data.pt ㅡmodel mrcnn_model_75.pt
+
+      - 위 명령어를 실행시키면, 전체 데이터셋에 대해서 평가를 시작함
+      - 평가가 끝나면 detailed_metrics.json 파일이 생성됨
+     
+      - python3 analysis.py 를 입력하면, detailed_metrics.json 파일으로부터 test.xlsx 파일을 생성하여 모든 결과를 저장함
+  
+    6.1.3. 결과 이미지 생성 방법
+      cd /e8/MRCNN
+      python3 evaluate.py --conf "confidence threshold" --num "각 클래스별 추론하여 저장할 이미지 개수" --data "데이터셋 파일의 경로" --model "모델 파일의 경로"
+    
+      e.g. python3 evaluate.py --conf 0.9 --num 1
+  
+    - 위의 명령어로 각 클래스별 이미지에 모델 추론 결과인 바운딩 박스와 폴리곤을 도식하여 이미지로 저장함
+==============================================================================
+  6.2. SSD
+    6.2.1. 학습 방법
+      cd /e8/SSD
+      python3 train.py --dir "도커 상 데이터셋 경로" --data "생성할 데이터셋 파일의 경로" 혹은 "이미 존재하는 데이터셋 파일의 경로" --model "학습을 재개할 모델 파일의 경로" --epoch "학습할 에폭 수" --batch "학습할 배치 크기"
+    
+      e.g. python3 train.py --dir /dataset --data ssd_data.pt --model ssd_model_130.pt --epoch 10 --batch 128
+
+    6.2.2. 테스트 방법
+      cd /e8/SSD 
+      python3 test_model.py --data "데이터셋 파일의 경로" --model "모델 파일의 경로"
+    
+      e.g. python3 test_model.py --data ssd_data.pt ㅡmodel ssd_model_130.pt
+   
+      - 위 명령어를 실행시키면, 전체 데이터셋에 대해서 평가를 시작함
+      - 평가가 끝나면 detailed_metrics.json 파일이 생성됨
+      - python3 analysis.py 를 입력하면, detailed_metrics.json 파일으로부터 test.xlsx 파일을 생성하여 모든 결과를 저장함  
+
+    6.2.3. 결과 이미지 생성 방법
+      cd /e8/MRCNN
+      python3 evaluate.py --conf "confidence threshold" --num "각 클래스별 추론하여 저장할 이미지 개수" --data "데이터셋 파일의 경로" --model "모델 파일의 경로"
+    
+      e.g. python3 evaluate.py --conf 0.9 --num 1
+  
+      - 위의 명령어로 각 클래스별 이미지에 모델 추론 결과인 바운딩 박스를 도식하여 num개의 이미지로 저장함
+==============================================================================
+7. 시뮬레이션 기반 이미지 분류 모델
+  7.1. 학습 방법
+    cd /e8/EFNET
+    python3 train.py --train "학습용 데이터의 경로" --test "테스트 데이터의 경로" --model "학습을 재개할 모델 파일의 경로"
+    
+    e.g. python3 train --train dataset/train --test dataset/test --model eff_net.pt
+
+    - 위의 명령어를 통해서 25번의 에폭 동안 이미지 분류 모델 학습을 진행함 
+    - 학습이 모두 끝나면 "eff_net.pt" 라는 모델 체크포인트를 생성함
+ 
+  7.2. 테스트 방법
+    cd /e8/EFNET
+    python3 evaluate.py --model "테스트할 모델 파일 이름"
+
+    e.g. python3 evaluate.py --model eff_net.pt
+    
+    - 위의 명령어를 통해서, 테스트 데이터셋에 대한 평가를 시작함
+    - 평가가 끝나면 test.xlsx 파일을 생성하고, 각 클래스 별 F1 score, 정확도와, 모든 클래스에 대한 F1 score, 정확도를 출력함
+
+
