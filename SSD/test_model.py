@@ -138,12 +138,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
                     else:
                         pred_classes.append(False)
 
-                AP = average_precision_score(pred_classes, output['scores'])
-                if not np.isnan(AP):
-                    if label in APs:
-                        APs[label].append(AP)
-                    else:
-                        APs[label] = [AP]
+
 
     logs["end"]=getTimestamp()
     mIOU = {decode[int(k)]:np.mean(v) for k, v in IOUs.items()}
