@@ -104,10 +104,7 @@ with torch.no_grad():
         is_correct = temp_label == temp_predict
         stats_by_class[temp_label]["total"] += 1
         stats_by_class[temp_label]["correct"] += int(is_correct)
-        #print("path", path)
-        #print("predict", temp_predict)
-        #print("label", temp_label)
-        #print("iscorrect", is_correct)
+
         logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
         logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
         logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
@@ -115,17 +112,6 @@ with torch.no_grad():
         
         labels_by_class[temp_label].append(temp_label)
         preds_by_class[temp_label].append(temp_predict)
-
-        #temp_labels = labels_by_class[temp_label]
-        #temp_preds = preds_by_class[temp_label]
-        
-       # print(set(temp_preds) -set(temp_labels))
-        #cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds,average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="weighted")
-        
-        #logs[path]["cumul_precision"] = cumul_precision
-        #logs[path]["cumul_recall"] = cumul_recall
-        #logs[path]["cumul_f1"] = cumul_f1
-        
   
         
         if img_idx % 5000 == 0:
@@ -202,7 +188,6 @@ def write_to_excel(logs):
     ws.append(["faulty_tn", "faulty_fp", "faulty_fn", "faulty_tp", "faulty_acc", "faulty_f1"])
     ws.append([f_tn, f_fp, f_fn, f_tp, f_acc, f_f1])
     ws.append(["image_name", "predict", "label", "cumul_correct", "cumul_total"])
-    #ws.append(["image_name", "predict", "label", "cumul_precision", "cumul_recall", "cumul_f1", "cumul_correct", "cumul_total"])
     for key, value in logs.items():
         if key not in ["final_stats", "end", "start", "class_stats"]:
             img_name = key

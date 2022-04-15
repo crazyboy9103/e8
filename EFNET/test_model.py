@@ -72,9 +72,3 @@ for image, label, path in testloader:
         plt.imshow(np.transpose(npimg, (1, 2, 0)))
         plt.savefig(f"{model_label}_label_{label}_pred_{pred}.png", dpi=600)
         plt.clf()
-
-
-
-#outputs = net(images)
-#_, predicted = torch.max(outputs, 1) 
-#print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))

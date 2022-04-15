@@ -25,19 +25,14 @@ class MyModel(Model):
         print("subset len", len(test_set))
         f = open("test_ssd.csv", "w", newline='')
         csv_writer = csv.writer(f)
-        #print(dir(test_data.dataset))
-        #print(test_data.labels)
         testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         full_image_names = dataset.images
         filenames = [full_image_names[idx] for idx in test_idx]
-        #filenames = [fname for fname, _ in testloader.dataset.samples]
         print("test filenames", filenames[0], filenames[1])
         for row in filenames:
             csv_writer.writerow([row])
-        #csv_writer.writerows(test_data.dataset.images.values())
         f.close()
         print("test dataset list saved 'test_ssd.csv'")
-        #testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         evaluate(self.model, filenames, 1, testloader, device=self.device)
 def getTimestamp():
     import time, datetime
@@ -116,9 +111,6 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
                 
             for j, (label, output) in enumerate(pred_result.items()):
-                #if j not in logs[image_id][class_name]:
-                #    logs[image_id][class_name][j] = {}
-
                 temp_boxes = [gt_box for gt_box, gt_label in zip(gt_boxes, gt_labels) if label == gt_label]
                 
                 #skip if no gt box 
@@ -143,13 +135,11 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
                     if temp_iou > 0.5:
                         pred_classes.append(True)
-                        #logs[image_id][class_name][j]["IOU"] = temp_iou
                     else:
                         pred_classes.append(False)
 
                 AP = average_precision_score(pred_classes, output['scores'])
                 if not np.isnan(AP):
-                    #logs[image_id][class_name][j]["AP"] = AP
                     if label in APs:
                         APs[label].append(AP)
                     else:
@@ -167,9 +157,6 @@ def evaluate(model, image_names, epoch, data_loader, device):
     
     with open(f"detailed_metrics.json", "w") as f:
         json.dump(logs, f, ensure_ascii=False)
-    
-    # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
 
 import argparse
 parser = argparse.ArgumentParser(description='test')
@@ -179,7 +166,5 @@ args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
 dataset = CustomDataset("/dataset", args.data)
-#dataset.labels = {i:dataset.labels[i] for i in range(1000)}
-#dataset.images = {i:dataset.images[i] for i in range(1000)}
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=128, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)

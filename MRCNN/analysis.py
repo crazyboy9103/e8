@@ -44,29 +44,6 @@ def write_to_excel(metrics):
                 except:
                     continue
     
-    
-    #mAP = 0
-    #mIoU = 0
-    #count = 0
-
-    #wb.create_sheet(index=1, title="mAPandmIOU")
-    #ws = wb[wb.sheetnames[1]]
-
-    #for class_name in is_correct_by_class:
-    #    is_cor = is_correct_by_class[class_name]
-    #    conf = conf_by_class[class_name]
-    #    ious = iou_by_class[class_name]
-
-    #    class_average_iou = np.mean(ious)
-    #    class_average_ap = average_precision_score(is_cor, conf)
-
-    #    ws.append([class_name, class_average_iou, class_average_ap])
-    #    print(f"Class: {class_name}, Average IoU: {class_average_iou}, Average Precision: {class_average_ap}")
-    #    mIoU += class_average_iou
-    #    mAP += class_average_ap
-    #    count += 1
-    #ws.append(["Final mAP", mAP/count, "Final maskIou", mIoU/count])
-    #print(f"Final mAP :{mAP/count}, Final mIoU : {mIoU/count}")
     wb.save("test_mrcnn.xlsx")
 
 write_to_excel(metrics)
