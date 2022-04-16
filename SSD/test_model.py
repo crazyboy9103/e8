@@ -53,7 +53,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
     for batch_idx, (images, targets) in enumerate(metric_logger.log_every(data_loader, 100, header)):
         images = list(img.to(device) for img in images)
         preds = model(images)
-        images_names = [image_names[j] for j in range(batch_idx * 128, (batch_idx+1) * 128) if j < len(image_names)]
+        images_names = [image_names[j] for j in range(batch_idx * len(images), (batch_idx+1) * len(images)) if j < len(image_names)]
         for i, image in enumerate(images):
             pred = preds[i]
             boxes = pred['boxes'].detach().cpu()
@@ -128,11 +128,6 @@ def evaluate(model, image_names, epoch, data_loader, device):
                  
                 for temp_iou in box_iou_d1.values:
                     temp_iou = float(temp_iou)
-                    if label in IOUs:
-                        IOUs[label].append(temp_iou)
-                    else:
-                        IOUs[label] = [temp_iou]
-
                     if temp_iou > 0.5:
                         pred_classes.append(True)
                     else:
