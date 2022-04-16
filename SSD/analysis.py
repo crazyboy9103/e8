@@ -78,7 +78,7 @@ def write_to_excel(metrics):
     ws = wb.active
     ws.append(['start', 'end'])
     ws.append([metrics['start'], metrics['end']])
-    ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou", "cumul_average_iou", "cumul_average_ap"])
+    ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou"])
     for image_name, result in tqdm(analysis(metrics).items(), desc="image analysis"):
         #print("result", result)
         if isinstance(result, int) or isinstance(result, str):
@@ -97,12 +97,10 @@ def write_to_excel(metrics):
             for i in range(len(stats['label'])):
                 try:
                     is_correct_by_class[class_name].append(stats['correct'][i])
-                    conf_by_class[class_name].append(stats["conf"][i])
+                    conf_by_class[class_name].append(stats['conf'][i])
                     iou_by_class[class_name].append(stats["iou"][i])
 
-                    cumul_average_iou = np.mean(iou_by_class[class_name])
-                    cumul_average_ap = average_precision_score(is_correct_by_class[class_name], conf_by_class[class_name])
-                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_bbox'][i]), str(stats['label'][i]), str(stats['bbox'][i]), str(stats['conf'][i]), str(stats['iou'][i]), str(cumul_average_iou), str(cumul_average_ap)])
+                    ws.append([image_name, stats["correct"][i], str(stats["gt_label"][i]), str(stats['gt_bbox'][i]), str(stats['label'][i]), str(stats['bbox'][i]), str(stats['conf'][i]), stats['iou'][i])
 
                 except:
                     continue
