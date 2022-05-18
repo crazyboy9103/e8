@@ -142,7 +142,7 @@ def write_to_excel(metrics):
         precisions = [tp/(cum_TP[-1] + cum_FP[-1] + epsilon) for tp in cum_TP]
         average_precisions = integrate.cumtrapz([1]+precisions, [0]+recalls)
     
-        for i, (res, cum_tp, cum_fn, cum_fp, rec, prec, avg_prec) in enumerate(zip(result, cum_TP, cum_FN, cum_FP, recalls, precisions, average_precisions)):
+        for i, (res, cum_tp, cum_fn, cum_fp, rec, prec, avg_prec) in tqdm(enumerate(zip(result, cum_TP, cum_FN, cum_FP, recalls, precisions, average_precisions)), desc=f"{label} calc stats"):
             line = res[:9] + [cum_tp, cum_fn, cum_fp, rec, prec, avg_prec]
             if i == 0:
                 APs[label] = average_precisions[-1]
