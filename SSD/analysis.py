@@ -62,7 +62,7 @@ def analysis(metrics):
             pred_bbox_tensor = torch.tensor(pred_bbox)
             conf_tensor = torch.tensor(conf)
 
-            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.1).tolist()
+            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.001).tolist()
             
             pred_bbox = [pred_bbox[idx] for idx in keep_idx]
             pred_label = [pred_label[idx] for idx in keep_idx]
@@ -115,7 +115,7 @@ def write_to_excel(metrics):
 
         for class_name, stats in result.items():
             for i in range(len(stats['label'])):
-                analysis_result[class_name].append([image_name, stats["time"][i], stats["correct"][i], stats["gt_label"][i], stats["gt_bbox"][i], stats["label"][i], stats["bbox"][i], round(stats["conf"][i], 2), round(stats["iou"][i],2), stats["FP"][i], stats["FN"][i], stats["TP"][i]])
+                analysis_result[class_name].append([image_name, stats["time"][i], stats["correct"][i], stats["gt_label"][i], stats["gt_bbox"][i], stats["label"][i], stats["bbox"][i], round(stats["conf"][i], 5), round(stats["iou"][i],2), stats["FP"][i], stats["FN"][i], stats["TP"][i]])
 
     del logs
 
@@ -139,9 +139,9 @@ def write_to_excel(metrics):
         recalls = [tp/(cum_TP[-1] + cum_FN[-1] + epsilon) for tp in cum_TP]
         precisions = [tp/(cum_TP[-1] + cum_FP[-1] + epsilon) for tp in cum_TP]
         average_precisions = integrate.cumtrapz([1]+precisions, [0]+recalls)
-        recalls = list(map(lambda x: round(x, 2), recalls))
-        precisions = list(map(lambda x: round(x, 2), precisions))
-        average_precisions = list(map(lambda x: round(x, 2), average_precisions))
+        recalls = list(map(lambda x: round(x, 4), recalls))
+        precisions = list(map(lambda x: round(x, 4), precisions))
+        average_precisions = list(map(lambda x: round(x, 4), average_precisions))
         for i, (res, cum_tp, cum_fn, cum_fp, rec, prec, avg_prec) in tqdm(enumerate(zip(result, cum_TP, cum_FN, cum_FP, recalls, precisions, average_precisions)), desc=f"{label} calc stats"):
             line = res[:9] + [cum_tp, cum_fn, cum_fp, rec, prec, avg_prec]
             if i == 0:
