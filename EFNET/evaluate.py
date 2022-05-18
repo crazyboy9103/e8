@@ -88,7 +88,7 @@ net.eval()
 #print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
 
 logs = {"start":getTimestamp()}
-stats_by_class = {dataset.classes[i]:{"correct":0, "total":0} for i in range(3)} #11 classes
+stats_by_class = {dataset.classes[i]:{"correct":0, "total":0} for i in range(3)} 
 labels_by_class = {dataset.classes[i]:[] for i in range(3)}
 preds_by_class = {dataset.classes[i]:[] for i in range(3)}
 
@@ -105,10 +105,7 @@ with torch.no_grad():
         is_correct = temp_label == temp_predict
         stats_by_class[temp_label]["total"] += 1
         stats_by_class[temp_label]["correct"] += int(is_correct)
-        #print("path", path)
-        #print("predict", temp_predict)
-        #print("label", temp_label)
-        #print("iscorrect", is_correct)
+ 
         logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "class_stats":{}, "final_stats":{}}
         logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
         logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
@@ -117,33 +114,7 @@ with torch.no_grad():
         labels_by_class[temp_label].append(temp_label)
         preds_by_class[temp_label].append(temp_predict)
 
-        #temp_labels = labels_by_class[temp_label]
-        #temp_preds = preds_by_class[temp_label]
 
-       # print(set(temp_preds) -set(temp_labels))
-        #cumul_precision, cumul_recall, cumul_f1 = precision_score(temp_labels, temp_preds,average="micro"), recall_score(temp_labels, temp_preds, average="micro"), f1_score(temp_labels, temp_preds, average="weighted")
-
-        #logs[path]["cumul_precision"] = cumul_precision
-        #logs[path]["cumul_recall"] = cumul_recall
-        #logs[path]["cumul_f1"] = cumul_f1
-
-
-
-        if img_idx % 5000 == 0:
-            str_buffer = f"== Image Index {img_idx}=="
-            for i in range(3):
-                labels = labels_by_class[dataset.classes[i]]
-                preds = preds_by_class[dataset.classes[i]]
-                try:
-                    acc = accuracy_score(labels, preds)
-                    f1 = f1_score(labels, preds, average="weighted")
-                    str_stats = f"Class {dataset.classes[i]}, Accuracy:{acc}, F1: {f1}"
-                    str_buffer = f"{str_buffer}\n{str_stats}\n"
-                except:
-                    str_stats = f"Class {dataset.classes[i]}, Accuracy:NaN, F1: NaN"
-                    str_buffer = f"{str_buffer}\n{str_stats}\n"
-
-            print(str_buffer)
     logs["class_stats"] = {}
     for i in range(3):
         labels = labels_by_class[dataset.classes[i]]
@@ -158,9 +129,10 @@ with torch.no_grad():
 logs["end"] = getTimestamp()
 
 json.dump(logs, open("detailed_metrics.json", "w"))
-
+from openpyxl import Workbook
+from sklearn.metrics import multilabel_confusion_matrix as mcm
 def write_to_excel(logs):
-    from openpyxl import Workbook
+    
 
     labels = []
     preds = []
@@ -170,7 +142,6 @@ def write_to_excel(logs):
     for k, v in preds_by_class.items():
         preds.extend(v)
 
-    from sklearn.metrics import multilabel_confusion_matrix as mcm
 
     multi_confusion = mcm(labels, preds, labels=["best", "normal", "faulty"])
     best_conf, norm_conf, fault_conf = multi_confusion
@@ -204,7 +175,6 @@ def write_to_excel(logs):
     ws.append([model_name+"faulty_tn", model_name+"faulty_fp", model_name+"faulty_fn", model_name+"faulty_tp", model_name+"faulty_acc", model_name+"faulty_f1"])
     ws.append([f_tn, f_fp, f_fn, f_tp, f_acc, f_f1])
     ws.append(["image_name", "predict", "label", "cumul_correct", "cumul_total", "", "Class", "Accuracy", "F1", "", "Final mean Acc", "mean F1"])
-    #ws.append(["image_name", "predict", "label", "cumul_precision", "cumul_recall", "cumul_f1", "cumul_correct", "cumul_total"])
 
     analysis_result = []
     for key, value in logs.items():
@@ -212,7 +182,6 @@ def write_to_excel(logs):
             img_name = key
 
             try:
-                # ws.append([img_name,str(value["predict"]),str(value["label"]),str(value["cumul_correct"]),str(value["cumul_total"])])
                 analysis_result.append([img_name,str(value["predict"]),str(value["label"]),str(value["cumul_correct"]),str(value["cumul_total"])])
 
             except:
