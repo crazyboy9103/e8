@@ -62,7 +62,7 @@ def analysis(metrics):
             pred_bbox_tensor = torch.tensor(pred_bbox)
             conf_tensor = torch.tensor(conf)
 
-            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.2).tolist()
+            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.1).tolist()
             
             pred_bbox = [pred_bbox[idx] for idx in keep_idx]
             pred_label = [pred_label[idx] for idx in keep_idx]
@@ -70,8 +70,6 @@ def analysis(metrics):
 
             
             for i in range(len(gt_bbox)):
-                best_iou = -99
-                best_idx = None
                 for j in range(len(pred_bbox)):
                     iou = compute_iou(gt_bbox[i], pred_bbox[j])
                     logs[image_name][class_name]["gt_label"].append(gt_label[i])
@@ -154,7 +152,7 @@ def write_to_excel(metrics):
             ws.append(line)
     
     ws = wb.create_sheet("Stats")
-    ws.append(["Class", "AP", "average IoU", "mAP", "mIoU"])
+    ws.append(["Class", "AP", "mIoU", "Final_mAP", "Final_mIoU"])
     for i, label in tqdm(enumerate(labels), desc="total stats"):
         AP = APs[label]
         miou = mious[label]
