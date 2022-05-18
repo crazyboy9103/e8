@@ -1,0 +1,57 @@
+Data loaded from ssd_data.pt from directory /dataset/484g_dataset/
+Dataset Initialized
+Loading model from ssd_model_130.pt
+Starting from epoch 131
+model loaded from ssd_model_130.pt
+[ WARN:0@16.363] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/단독주택/구조물(철근 노출)/불량/RGB/S-211125_H_X_3_R_2254275-1.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@16.419] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/단독주택/구조물(균열)/보통/RGB/S-211120_H_C_2_R_7748701-11.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@16.817] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/다세대주택/대지/불량/RGB/S-210925_M_F_3_R_2000049-22.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@18.057] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/다세대주택/마감/불량/RGB/S-210917_M_T_3_R_2000073-21.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@18.536] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/단독주택/구조물(균열)/보통/RGB/S-211120_H_C_2_R_7748663-12.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@18.580] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/다세대주택/구조물(철근 노출)/불량/RGB/S-211106_M_X_3_R_5178079-25.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@19.058] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/다세대주택/마감/불량/RGB/S-210908_M_T_3_R_2961030-8.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@20.649] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/아파트/구조물(철근 노출)/우수/RGB/S-211123_A_X_1_R_96362288-22.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@22.839] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/다세대주택/창호/불량/RGB/S-210918_M_W_3_R_2254012-11.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@24.209] global /io/opencv/modules/imgcodecs/src/loadsave.cpp (239) findDecoder imread_('/dataset/484g_dataset/원천_데이터/비주거용주택/구조물(박리, 박락)/불량/RGB/S-211110_N_P_3_R_9914003-27.jpg'): can't open/read file: check file path/integrity
+Traceback (most recent call last):
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/queues.py", line 239, in _feed
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/reduction.py", line 51, in dumps
+  File "/miniconda/envs/e8/lib/python3.8/site-packages/torch/multiprocessing/reductions.py", line 328, in reduce_storage
+RuntimeError: falseINTERNAL ASSERT FAILED at "/opt/conda/conda-bld/pytorch_1639180595841/work/aten/src/ATen/MapAllocator.cpp":263, please report a bug to PyTorch. unable to open shared memory object </torch_4317_485> in read-write mode
+Traceback (most recent call last):
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/queues.py", line 239, in _feed
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/reduction.py", line 51, in dumps
+  File "/miniconda/envs/e8/lib/python3.8/site-packages/torch/multiprocessing/reductions.py", line 329, in reduce_storage
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/reduction.py", line 198, in DupFd
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/resource_sharer.py", line 48, in __init__
+OSError: [Errno 24] Too many open files
+Traceback (most recent call last):
+  File "train.py", line 22, in <module>
+    main(args)
+  File "train.py", line 11, in main
+    model.fit(dataset, max_epochs=args.epoch)
+  File "/e8/SSD/SSD.py", line 298, in fit
+    train_one_epoch(self.model, self.optimizer, trainloader, self.device, e, print_freq=100)
+  File "/e8/SSD/engine.py", line 27, in train_one_epoch
+    for images, targets in metric_logger.log_every(data_loader, print_freq, header):
+  File "/e8/SSD/utils.py", line 171, in log_every
+    for obj in iterable:
+  File "/miniconda/envs/e8/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 521, in __next__
+    data = self._next_data()
+  File "/miniconda/envs/e8/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1186, in _next_data
+    idx, data = self._get_data()
+  File "/miniconda/envs/e8/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1152, in _get_data
+    success, data = self._try_get_data()
+  File "/miniconda/envs/e8/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 990, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/queues.py", line 107, in get
+    if not self._poll(timeout):
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/connection.py", line 257, in poll
+    return self._poll(timeout)
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/connection.py", line 424, in _poll
+    r = wait([self], timeout)
+  File "/miniconda/envs/e8/lib/python3.8/multiprocessing/connection.py", line 931, in wait
+    ready = selector.select(timeout)
+  File "/miniconda/envs/e8/lib/python3.8/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt

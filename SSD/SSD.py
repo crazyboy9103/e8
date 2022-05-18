@@ -116,7 +116,7 @@ def process_dataset(data_dir):
                 info['labels'].append(label_map[label])
 
             if info['boxes']:
-                images.append(img.strip(data_dir))
+                images.append(img.lstrip(data_dir))
                 labels.append(info)
     temp_images = {i: img for i, img in enumerate(images)}
     temp_labels = {i: label for i, label in enumerate(labels)}

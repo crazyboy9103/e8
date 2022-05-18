@@ -12,6 +12,7 @@ import torch
 import utils
 from sklearn.metrics import average_precision_score, confusion_matrix
 import csv
+
 class MyModel(Model):
     def test(self, dataset):
         print("dataset len", len(dataset))
@@ -33,6 +34,7 @@ class MyModel(Model):
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
         evaluate(self.model, filenames, 1, testloader, device=self.device)
+
 def getTimestamp():
     import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
@@ -65,13 +67,12 @@ def evaluate(model, image_names, epoch, data_loader, device):
     header = 'Test:'
 
     logs = {"start":getTimestamp()}
-    IOUs = {}
-    APs = {}
-    #accs = {}
+
     for batch_idx, (images, targets) in enumerate(metric_logger.log_every(data_loader, 20, header)):
         images = list(img.to(device) for img in images)
-        preds = model(images)
-        images_names = [image_names[j] for j in range(batch_idx * 8, (batch_idx+1) * 8) if j < len(image_names)]
+        with torch.no_grad():
+            preds = model(images)
+        images_names = [image_names[j] for j in range(batch_idx * len(images), (batch_idx+1) * len(images)) if j < len(image_names)]
         for i, image in enumerate(images):
             pred = preds[i]
             masks = pred['masks'].detach().cpu()
@@ -98,19 +99,37 @@ def evaluate(model, image_names, epoch, data_loader, device):
                 logs[image_id][class_name]['conf'] = []
                 logs[image_id][class_name]['iou'] = []
                 logs[image_id][class_name]['correct'] = []
-
+                logs[image_id][class_name]["time"] = []
+                logs[image_id][class_name]["FP"] = []
+                logs[image_id][class_name]["FN"] = []
+                logs[image_id][class_name]["TP"] = []
+            
+            for label in gt_labels:
+                logs[image_id][class_name]["gt_label"].append(decode[label.item()])
+            
+            
             for j, gt_mask in enumerate(gt_masks):
                 for k, mask in enumerate(masks):
                     iou = compute_iou(mask, gt_mask)
-                    logs[image_id][class_name]['iou'].append(iou)
-                    logs[image_id][class_name]['gt_label'].append(decode[gt_label])
+                    logs[image_id][class_name]['gt_label'].append(class_name)
                     logs[image_id][class_name]['label'].append(decode[labels[k].item()])
                     logs[image_id][class_name]['conf'].append(float(scores[k]))
-                    if iou > 0.5:
-                       logs[image_id][class_name]['correct'].append(gt_label == labels[k].item())
-                       
-                    else:
-                       logs[image_id][class_name]['correct'].append(False)
+                    logs[image_id][class_name]['iou'].append(iou)
+
+                    correct = gt_label == labels[k].item() if iou > 0.2 else False
+
+                    logs[image_id][class_name]["correct"].append(correct)
+                    logs[image_id][class_name]["time"].append(getTimestamp())
+
+                    FP = (labels[k].item() == gt_label) == True and iou < 0.2
+                    FN = (labels[k].item() == gt_label) == False
+                    TP = (labels[k].item() == gt_label) == True and iou > 0.2
+
+                    logs[image_name][class_name]["FP"].append(int(FP))
+                    logs[image_name][class_name]["FN"].append(int(FN))
+                    logs[image_name][class_name]["TP"].append(int(TP))
+
+                    
 
                 
     logs["end"]=getTimestamp()
@@ -126,6 +145,6 @@ parser.add_argument('--model', default="mrcnn_model_75.pt", type=str, help="mrcn
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/dataset", args.data)
+dataset = CustomDataset("/dataset/48g_dataset", args.data)
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)

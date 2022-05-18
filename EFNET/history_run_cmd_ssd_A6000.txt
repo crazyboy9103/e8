@@ -1,0 +1,4 @@
+python3 process_data
+python3 process_data.py
+python3 process_data.py
+Mon May 9 23:14:22 UTC 2022
