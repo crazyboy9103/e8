@@ -100,7 +100,7 @@ def write_to_excel(metrics):
     labels = json.load(open("labels.json", "r"))
     labels = list(labels.keys())
     wb = Workbook(write_only=True)
-    assert "Sheet" in wb.sheetnames
+
     worksheets = {}
     
     header = ["image_name", "time", "correct", "gt_label", "gt_bbox", "label", "bbox", "conf", "iou", "cum_TP", "cum_FN", "cum_FP", "recall", "precision", "average_precision", "AP", "avg_iou"]
@@ -151,8 +151,7 @@ def write_to_excel(metrics):
             line = list(map(str, line))
             ws.append(line)
     
-    ws = wb["Sheet"]
-    ws.title = "Stats"
+    ws = wb.create_sheet("Stats")
     ws.append(["Class", "AP", "average IoU", "mAP", "mIoU"])
     for i, label in tqdm(enumerate(labels), desc="total stats"):
         AP = APs[label]
