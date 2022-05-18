@@ -40,13 +40,6 @@ def getTimestamp():
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return date
 def compute_iou(cand_mask, gt_mask):
-    #gt_mask = torch.zeros((H_new, W_new), dtype=torch.bool)
-    #mask = torch.zeros((H_new, W_new), dtype=torch.bool)
-    #gt_poly = np.array(gt_poly).reshape(len(gt_poly)//2, 2)
-    #cand_poly = np.array(cand_poly).reshape(len(cand_poly)//2, 2)
-    #cv2.fillPoly(img=gt_mask, pts=[gt_poly], color=(1,1,1))
-    #cv2.fillPoly(img=mask, pts=[cand_poly], color=(1,1,1))
-
     gt_mask = gt_mask.bool().numpy()
     mask = cand_mask.bool().numpy()
 
@@ -74,13 +67,11 @@ def evaluate(model, image_names, epoch, data_loader, device):
     header = 'Test:'
 
     logs = {"start":getTimestamp()}
-    IOUs = {}
-    APs = {}
-    #accs = {}
+
     for batch_idx, (images, targets) in enumerate(metric_logger.log_every(data_loader, 20, header)):
         images = list(img.to(device) for img in images)
         preds = model(images)
-        images_names = [image_names[j] for j in range(batch_idx * 8, (batch_idx+1) * 8) if j < len(image_names)]
+        images_names = [image_names[j] for j in range(batch_idx * len(images), (batch_idx+1) * len(images)) if j < len(image_names)]
         for i, image in enumerate(images):
             pred = preds[i]
             masks = pred['masks'].detach().cpu()
@@ -102,50 +93,49 @@ def evaluate(model, image_names, epoch, data_loader, device):
 
             if class_name not in logs[image_id]:
                 logs[image_id][class_name] = {}
-                #logs[image_id][class_name]["gt_polys"] = []
                 logs[image_id][class_name]['gt_label'] = []
                 logs[image_id][class_name]['label'] = []
-                #logs[image_id][class_name]['polys'] = []
                 logs[image_id][class_name]['conf'] = []
                 logs[image_id][class_name]['iou'] = []
                 logs[image_id][class_name]['correct'] = []
-
-            #for label in gt_labels:
-            #    logs[image_id][class_name]['gt_label'].append(decode[label.item()])
+                logs[image_id][class_name]["time"] = []
+                logs[image_id][class_name]["FP"] = []
+                logs[image_id][class_name]["FN"] = []
+                logs[image_id][class_name]["TP"] = []
             
-            #for mask in gt_masks:
-                #poly = convert_mask_to_poly(mask)
-                #logs[image_id][class_name]["gt_polys"].append(convert_mask_to_poly(mask))
+            for label in gt_labels:
+                logs[image_id][class_name]["gt_label"].append(decode[label.item()])
+            
             
             for j, gt_mask in enumerate(gt_masks):
                 for k, mask in enumerate(masks):
                     iou = compute_iou(mask, gt_mask)
-                    if iou > 0.3:
-                       logs[image_id][class_name]['iou'].append(iou)
-                       logs[image_id][class_name]['correct'].append(gt_label == labels[k].item())
-                       logs[image_id][class_name]['gt_label'].append(decode[gt_label])
-                       logs[image_id][class_name]['label'].append(decode[labels[k].item()])
-                       logs[image_id][class_name]['conf'].append(float(scores[k]))
+                    logs[image_id][class_name]['gt_label'].append(class_name)
+                    logs[image_id][class_name]['label'].append(decode[labels[k].item()])
+                    logs[image_id][class_name]['conf'].append(float(scores[k]))
+                    logs[image_id][class_name]['iou'].append(iou)
 
-            #pred_result = {}
-            # 같은 label 끼리 묶음
-            #for j, label in enumerate(labels):
-            #    label = label.item()
-            #    logs[image_id][class_name]['label'].append(decode[label])
-                #logs[image_id][class_name]['polys'].append(convert_mask_to_poly(masks[j]))
-            #    logs[image_id][class_name]['conf'].append(float(scores[j]))
+                    correct = gt_label == labels[k].item() if iou > 0.2 else False
+
+                    logs[image_id][class_name]["correct"].append(correct)
+                    logs[image_id][class_name]["time"].append(getTimestamp())
+
+                    FP = (labels[k].item() == gt_label) == True and iou < 0.2
+                    FN = (labels[k].item() == gt_label) == False
+                    TP = (labels[k].item() == gt_label) == True and iou > 0.2
+
+                    logs[image_name][class_name]["FP"].append(int(FP))
+                    logs[image_name][class_name]["FN"].append(int(FN))
+                    logs[image_name][class_name]["TP"].append(int(TP))
+
                     
-        
-            #del masks, gt_masks
-        #del images, preds
+
                 
     logs["end"]=getTimestamp()
     import json
     with open(f"detailed_metrics.json", "w") as f:
         json.dump(logs, f, ensure_ascii=False)
-    
-    # gather the stats from all processes
-    #metric_logger.synchronize_between_processes()
+
 
 import argparse
 parser = argparse.ArgumentParser(description='test')
@@ -155,7 +145,5 @@ args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
 dataset = CustomDataset("/dataset/48g_dataset", args.data)
-#dataset.labels = {i:dataset.labels[i] for i in range(1000)}
-#dataset.images = {i:dataset.images[i] for i in range(1000)}
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)

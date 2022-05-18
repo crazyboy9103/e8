@@ -86,10 +86,6 @@ from itertools import accumulate
 from scipy import integrate
 def write_to_excel(metrics):
     from openpyxl import Workbook
-    correct_by_class = {}
-    conf_by_class = {}
-    iou_by_class = {}
-    
     labels = json.load(open("labels.json", "r"))
     labels = list(labels.keys())
     wb = Workbook()
