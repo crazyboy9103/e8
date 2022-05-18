@@ -1,19 +1,26 @@
-import numpy as np 
+import numpy as np
 import json
 from tqdm import tqdm
+import time, datetime
+def getTimestamp():
+    timezone=60*60*9
+    utc_timestamp = int(time.time()+timezone)
+    date = datetime.datetime.fromtimestamp(utc_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+    return date
+
 def compute_iou(cand_box, gt_box):
     # Calculate intersection areas
     x1 = np.maximum(cand_box[0], gt_box[0])
     y1 = np.maximum(cand_box[1], gt_box[1])
     x2 = np.minimum(cand_box[2], gt_box[2])
     y2 = np.minimum(cand_box[3], gt_box[3])
-    
+
     intersection = np.maximum(x2 - x1, 0) * np.maximum(y2 - y1, 0)
-    
+
     cand_box_area = (cand_box[2] - cand_box[0]) * (cand_box[3] - cand_box[1])
     gt_box_area = (gt_box[2] - gt_box[0]) * (gt_box[3] - gt_box[1])
     union = cand_box_area + gt_box_area - intersection
-    
+
     iou = intersection / union
     return iou
 
@@ -23,17 +30,15 @@ metrics = json.load(f)
 f.close()
 print("Finished reading")
 
-from sklearn.metrics import average_precision_score
 def analysis(metrics):
     logs = {}
     print(f"Eval started : {metrics['start']}, Eval ended : {metrics['end']}")
     for image_name, result in tqdm(metrics.items(), desc="reading image result"):
-        #print(result)
         if isinstance(result, int) or isinstance(result, str):
             continue
         if image_name not in logs:
             logs[image_name] = {}
-            
+
         for class_name, stats in result.items():
             if class_name not in logs[image_name]:
                 logs[image_name][class_name] = {}
@@ -44,7 +49,12 @@ def analysis(metrics):
                 logs[image_name][class_name]["conf"] = []
                 logs[image_name][class_name]["iou"] = []
                 logs[image_name][class_name]["correct"] = []
-                
+                logs[image_name][class_name]["time"] = []
+                logs[image_name][class_name]["FP"] = []
+                logs[image_name][class_name]["FN"] = []
+                logs[image_name][class_name]["TP"] = []
+        #logs[image_name][class_name]["TN"] = []
+
             gt_bbox = stats['gt_bbox']
             gt_label = stats['gt_label']
             pred_bbox = stats['bbox']
@@ -53,74 +63,97 @@ def analysis(metrics):
             for i in range(len(gt_bbox)):
                 for j in range(len(pred_bbox)):
                     iou = compute_iou(gt_bbox[i], pred_bbox[j])
-                    if iou > 0.5:
-                        logs[image_name][class_name]["gt_label"].append(gt_label[i])
-                        logs[image_name][class_name]["gt_bbox"].append(gt_bbox[i])
-                        logs[image_name][class_name]["label"].append(pred_label[j])
-                        logs[image_name][class_name]['bbox'].append(pred_bbox[j])
-                        logs[image_name][class_name]['conf'].append(conf[j])
-                        logs[image_name][class_name]["iou"].append(iou)
-                        logs[image_name][class_name]["correct"].append(pred_label[j] == gt_label[i])
-                                                
+                    logs[image_name][class_name]["gt_label"].append(gt_label[i])
+                    logs[image_name][class_name]["gt_bbox"].append(gt_bbox[i])
+                    logs[image_name][class_name]["label"].append(pred_label[j])
+                    logs[image_name][class_name]["bbox"].append(pred_bbox[j])
+                    logs[image_name][class_name]["conf"].append(conf[j])
+                    logs[image_name][class_name]["iou"].append(iou)
 
+                    correct = pred_label[j] == gt_label[i] if iou > 0.5 else False
+                    logs[image_name][class_name]["correct"].append(correct)
+                    logs[image_name][class_name]["time"].append(getTimestamp())
+        
+                    FP = (pred_label[j] == gt_label[i]) == True and iou < 0.5
+                    FN = (pred_label[j] == gt_label[i]) == False
+                    TP = (pred_label[j] == gt_label[i]) == True and iou > 0.5
+                    logs[image_name][class_name]["FP"].append(int(FP))
+                    logs[image_name][class_name]["FN"].append(int(FN))
+                    logs[image_name][class_name]["TP"].append(int(TP))
     return logs
 
+from itertools import accumulate
+from scipy import integrate
 def write_to_excel(metrics):
     from openpyxl import Workbook
-    is_correct_by_class = {}
+    correct_by_class = {}
     conf_by_class = {}
     iou_by_class = {}
-
+    
+    labels = json.load(open("labels.json", "r"))
+    labels = list(labels.keys())
     wb = Workbook()
-    ws = wb.active
-    ws.append(['start', 'end'])
-    ws.append([metrics['start'], metrics['end']])
-    ws.append(["image_name", "correct", "gt_label", "gt_bbox", "label","bbox", "conf", "iou", "cumul_average_iou", "cumul_average_ap"])
-    for image_name, result in tqdm(analysis(metrics).items(), desc="image analysis"):
-        #print("result", result)
+    worksheets = {}
+    
+    header = ["image_name", "time", "correct", "gt_label", "gt_bbox", "label", "bbox", "conf", "iou", "cum_TP", "cum_FN", "cum_FP", "recall", "precision", "average_precision", "AP", "avg_iou"]
+    for label in labels:
+        ws = wb.create_sheet(label)
+        worksheets[label] = ws
+        ws.append(header)
+
+    analysis_result = {label: [] for label in labels}
+    logs = analysis(metrics)
+    for image_name, result in tqdm(logs.items(), desc="image analysis"):
         if isinstance(result, int) or isinstance(result, str):
             continue
 
         for class_name, stats in result.items():
-            if class_name not in is_correct_by_class:
-                is_correct_by_class[class_name] = []
-            
-            if class_name not in conf_by_class:
-                conf_by_class[class_name] = []
-            
-            if class_name not in iou_by_class:
-                iou_by_class[class_name] = []
-
             for i in range(len(stats['label'])):
-                try:
-                    is_correct_by_class[class_name].append(stats['correct'][i])
-                    conf_by_class[class_name].append(stats["conf"][i])
-                    iou_by_class[class_name].append(stats["iou"][i])
+                analysis_result[class_name].append([image_name, stats["time"][i], stats["correct"][i], stats["gt_label"][i], stats["gt_bbox"][i], stats["label"][i], stats["bbox"][i], stats["conf"][i], stats["iou"][i], stats["FP"][i], stats["FN"][i], stats["TP"][i]])
 
-                    cumul_average_iou = np.mean(iou_by_class[class_name])
-                    cumul_average_ap = average_precision_score(is_correct_by_class[class_name], conf_by_class[class_name])
-                    ws.append([image_name, str(stats["correct"][i]), str(stats["gt_label"][i]), str(stats['gt_bbox'][i]), str(stats['label'][i]), str(stats['bbox'][i]), str(stats['conf'][i]), str(stats['iou'][i]), str(cumul_average_iou), str(cumul_average_ap)])
-
-                except:
-                    continue
+    APs = {}
+    mious = {}
     
+    epsilon = 1e-6
+    for label, result in tqdm(analysis_result.items(), desc="writing to excel"):
+        ws = worksheets[label]
+        result = sorted(result, key=lambda x: x[7], reverse=True)
+        ious = [item[-4] for item in result]
+        mean_iou = sum(ious)/len(ious)
+        TP = [item[-1] for item in result]
+        FN = [item[-2] for item in result]
+        FP = [item[-3] for item in result]
     
-    mAP = 0
-    mIoU = 0
-    count = 0
-    for class_name in is_correct_by_class:
-        is_cor = is_correct_by_class[class_name]
-        conf = conf_by_class[class_name]
-        ious = iou_by_class[class_name]
-
-        class_average_iou = np.mean(ious)
-        class_average_ap = average_precision_score(is_cor, conf)
-
-        print(f"Class: {class_name}, Average IoU: {class_average_iou}, Average Precision: {class_average_ap}")
-        mIoU += class_average_iou
-        mAP += class_average_ap
-        count += 1
-    print(f"Final mAP :{mAP/count}, Final mIoU : {mIoU/count}")
+        cum_TP = list(accumulate(TP))
+        cum_FN = list(accumulate(FN))
+        cum_FP = list(accumulate(FP))
+    
+        recalls = [tp/(cum_TP[-1] + cum_FN[-1] + epsilon) for tp in cum_TP]
+        precisions = [tp/(cum_TP[-1] + cum_FP[-1] + epsilon) for tp in cum_TP]
+        average_precisions = integrate.cumtrapz([1]+precisions, [0]+recalls)
+    
+        for i, (res, cum_tp, cum_fn, cum_fp, rec, prec, avg_prec) in enumerate(zip(result, cum_TP, cum_FN, cum_FP, recalls, precisions, average_precisions)):
+            line = res[:9] + [cum_tp, cum_fn, cum_fp, rec, prec, avg_prec]
+            if i == 0:
+                APs[label] = average_precisions[-1]
+                mious[label] = mean_iou
+                line = line + [average_precisions[-1], mean_iou]
+            line = list(map(str, line))
+            ws.append(line)
+    
+    ws = wb["Sheet1"]
+    ws.title = "Stats"
+    ws.append(["Class", "AP", "average IoU", "mAP", "mIoU"])
+    for i, label in enumerate(labels):
+        AP = APs[label]
+        miou = mious[label]
+        line = [label, AP, miou]
+        if i == 0:
+            line = line + [sum(APs.values())/len(APs), sum(mious.values())/len(mious)]
+        line = list(map(str, line))
+        ws.append(line) 
     wb.save("test.xlsx")
+    wb.close()
 
 write_to_excel(metrics)
+

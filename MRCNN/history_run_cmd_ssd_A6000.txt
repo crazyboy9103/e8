@@ -1,0 +1,12 @@
+Mon May 9 20:00:28 UTC 2022
+python3 train.py --dir /dataset/48g_dataset/ --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 4 --batch 12
+Mon May 9 20:01:36 UTC 2022
+python3 train.py --dir /dataset/48g_dataset/ --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 4 --batch 12
+Tue May 10 11:56:37 UTC 2022
+python3 train.py --dir /dataset/48g_dataset/ --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 4 --batch 12
+Tue May 10 11:57:12 UTC 2022
+python3 train.py --dir /dataset/48g_dataset/ --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 10 --batch 12
+Tue May 10 12:00:15 UTC 2022
+python3 train.py --dir /dataset/48g_dataset/ --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 10 --batch 12
+Tue May 10 12:01:58 UTC 2022
+python3 train.py --dir /dataset/48g_dataset/ --data mrcnn_data.pt --model mrcnn_model_75.pt --epoch 10 --batch 12
