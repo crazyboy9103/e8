@@ -99,7 +99,7 @@ from openpyxl import Workbook
 def write_to_excel(metrics):
     labels = json.load(open("labels.json", "r"))
     labels = list(labels.keys())
-    wb = Workbook()
+    wb = Workbook(write_only=True)
     assert "Sheet" in wb.sheetnames
     worksheets = {}
     
