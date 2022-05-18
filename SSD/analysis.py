@@ -154,7 +154,7 @@ def write_to_excel(metrics):
     ws = wb["Sheet"]
     ws.title = "Stats"
     ws.append(["Class", "AP", "average IoU", "mAP", "mIoU"])
-    for i, label in enumerate(labels):
+    for i, label in tqdm(enumerate(labels), desc="total stats"):
         AP = APs[label]
         miou = mious[label]
         line = [label, AP, miou]
@@ -162,6 +162,7 @@ def write_to_excel(metrics):
             line = line + [sum(APs.values())/len(APs), sum(mious.values())/len(mious)]
         line = list(map(str, line))
         ws.append(line) 
+    print("Saving test.xlsx")
     wb.save("test.xlsx")
     wb.close()
 
