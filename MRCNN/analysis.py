@@ -18,8 +18,8 @@ print("Finished reading")
 labels = json.load(open("labels.json", "r"))
 labels = list(labels.keys())
 # Open workbook
-wb = Workbook()
-assert "Sheet" in wb.sheetnames
+wb = Workbook(write_only=True)
+
 worksheets = {}
 header = ["image_name", "time", "correct", "gt_label", "label", "conf", "iou", "cum_TP", "cum_FN", "cum_FP", "recall", "precision", "average_precision", "AP", "avg_iou"]
 for label in labels:
@@ -73,8 +73,7 @@ for label, result in tqdm(analysis_result.items(), desc="writing to excel"):
         line = list(map(str, line))
         ws.append(line)
 
-ws = wb["Sheet"]
-ws.title = "Stats"
+ws = wb.create_sheet("Stats")
 ws.append(["Class", "AP", "average IoU", "mAP", "mIoU"])
 for i, label in enumerate(labels):
     AP = APs[label]

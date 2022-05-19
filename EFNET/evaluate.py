@@ -35,7 +35,8 @@ def getTimestamp():
     timezone = 60*60*9 # seconds * minutes * utc + 9
     utc_timestamp = int(time.time() + timezone)
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-    return utc_timestamp
+    return date
+
 parser = argparse.ArgumentParser(description="train efficientnet-b0")
 parser.add_argument("--dataset", default="./dataset", type=str, help="dataset path")
 parser.add_argument("--model", default="eff_net.pt", type=str, help="model name to load from")
@@ -57,14 +58,12 @@ else:
     test_idx = np.load(idx_filename)
 
 testset = torch.utils.data.Subset(dataset, test_idx)
-f = open(f"test_{model_name}.csv", "w", newline='')
+f = open(f"test_{model_name}.csv", "w", newline='', encoding="utf-8-sig")
 csv_writer = csv.writer(f)
 testloader = DataLoader(testset, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
 
 full_image_names = dataset.imgs
 filenames = [full_image_names[idx] for idx in test_idx]
-#filenames = [fname for fname, _ in testloader.dataset.samples]
-print("test filenames", filenames[0], filenames[1])
 for row in filenames:
     csv_writer.writerow([row[0]])
 f.close()
@@ -83,9 +82,6 @@ net.load_state_dict(torch.load(PATH))
 device = torch.device("cuda:0")
 net.to(device)
 net.eval()
-#outputs = net(images)
-#_, predicted = torch.max(outputs, 1) 
-#print('Predicted: ', ' '.join('%5s' %  testset.classes[predict] for predict in predicted))
 
 logs = {"start":getTimestamp()}
 stats_by_class = {dataset.classes[i]:{"correct":0, "total":0} for i in range(3)} 
