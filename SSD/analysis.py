@@ -62,7 +62,7 @@ def analysis(metrics):
             pred_bbox_tensor = torch.tensor(pred_bbox)
             conf_tensor = torch.tensor(conf)
 
-            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 1e-5).tolist()
+            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.1).tolist()
             if len(keep_idx) > 3:
                 keep_idx = keep_idx[:3]
             
