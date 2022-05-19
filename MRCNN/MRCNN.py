@@ -341,9 +341,7 @@ class Model(Module):
         anchor_generator = AnchorGenerator(sizes = ((32, 64, 128, 256),), aspect_ratios=((0.5, 1.0, 2.0), ))
         roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=7, sampling_ratio=2)
         mask_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=14, sampling_ratio=2)
-        #model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
         model = MaskRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler, mask_roi_pool=mask_roi_pooler)
-        #model = detection.maskrcnn_resnet50_fpn(pretrained=False, num_classes=num_classes, pretrained_backbone=True,trainable_backbone_layers=3)
         in_features = model.roi_heads.box_predictor.cls_score.in_features
         model.roi_heads.box_predictor = detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
         in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
@@ -369,22 +367,22 @@ class Model(Module):
         return self.model(images, targets)
     
     def fit(self, dataset, max_epochs):
-        data_size = len(dataset)
-        print("data_size", data_size)
-        n_train = int(data_size * 0.8)
-        n_valid = int(data_size * 0.9)
-        split_idx = np.random.choice(data_size, data_size, replace=False)
+        # data_size = len(dataset)
+        # print("data_size", data_size)
+        # n_train = int(data_size * 0.8)
+        # n_valid = int(data_size * 0.9)
+        # split_idx = np.random.choice(data_size, data_size, replace=False)
         
-        train_idx = split_idx[:n_train]
-        val_idx = split_idx[n_train:n_valid]
-        test_idx = split_idx[n_valid:]
+        # train_idx = split_idx[:n_train]
+        # val_idx = split_idx[n_train:n_valid]
+        # test_idx = split_idx[n_valid:]
         
-        trainset = torch.utils.data.Subset(dataset, train_idx)
-        valset = torch.utils.data.Subset(dataset, val_idx)
-        testset = torch.utils.data.Subset(dataset, test_idx)
+        # trainset = torch.utils.data.Subset(dataset, train_idx)
+        # valset = torch.utils.data.Subset(dataset, val_idx)
+        # testset = torch.utils.data.Subset(dataset, test_idx)
 
-        trainloader = DataLoader(dataset = trainset, batch_size=self.batch_size, shuffle=True, num_workers=4,collate_fn=collate_fn)
-        valloader = DataLoader(dataset = valset, batch_size=self.batch_size, shuffle=True, num_workers=4,collate_fn=collate_fn)
+        trainloader = DataLoader(dataset = dataset, batch_size=self.batch_size, shuffle=True, num_workers=4,collate_fn=collate_fn)
+        #valloader = DataLoader(dataset = valset, batch_size=self.batch_size, shuffle=True, num_workers=4,collate_fn=collate_fn)
 
         for e in range(self.start_epoch, self.start_epoch + max_epochs):
             #for testing
@@ -392,11 +390,11 @@ class Model(Module):
             train_one_epoch(self.model, self.optimizer, trainloader, self.device, e, print_freq=100)
             
             if e % 5 == 0:
-                evaluate(self.model, e, valloader, device=self.device)
+                #evaluate(self.model, e, valloader, device=self.device)
                 self.save(e)
         
-        testloader = DataLoader(dataset = testset, batch_size=self.batch_size, shuffle=False, num_workers=4,collate_fn=collate_fn)
-        evaluate(self.model, e+1, testloader, device=self.device)
+        # testloader = DataLoader(dataset = testset, batch_size=self.batch_size, shuffle=False, num_workers=4,collate_fn=collate_fn)
+        # evaluate(self.model, e+1, testloader, device=self.device)
      
 
     def save(self, epoch):

@@ -273,7 +273,7 @@ class Model(Module):
         return self.model(images, targets)
     
     def fit(self, dataset, max_epochs):
-        data_size = len(dataset)
+        #data_size = len(dataset)
         #n_train = int(data_size * 0.8)
         #n_valid = int(data_size * 0.9)
         

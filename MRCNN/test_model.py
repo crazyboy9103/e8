@@ -6,41 +6,42 @@ label_map = json.load(open("labels.json", "r"))
 decode = {}
 for k, v in label_map.items():
     decode[v] = k
+
 import os 
 import numpy as np
 import torch
 import utils
 from sklearn.metrics import average_precision_score, confusion_matrix
 import csv
-
+import time, datetime
 class MyModel(Model):
     def test(self, dataset):
-        print("dataset len", len(dataset))
-        if "test_idx.npy" not in os.listdir():
-            test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
-            np.save("test_idx.npy", test_idx)
-        else:
-            test_idx = np.load("test_idx.npy")
+        # print("dataset len", len(dataset))
+        # if "test_idx.npy" not in os.listdir():
+        #     test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
+        #     np.save("test_idx.npy", test_idx)
+        # else:
+        #     test_idx = np.load("test_idx.npy")
 
-        test_set = torch.utils.data.Subset(dataset, test_idx)
-        print("subset len", len(test_set))
-        f = open("test_mrcnn.csv", "w", newline='')
+        # test_set = torch.utils.data.Subset(dataset, test_idx)
+        # print("subset len", len(test_set))
+        f = open("test_mrcnn.csv", "w", newline='', encoding="utf-8-sig")
         csv_writer = csv.writer(f)
-        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        testloader = DataLoader(dataset = dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         full_image_names = dataset.images
-        filenames = [full_image_names[idx] for idx in test_idx]
+        filenames = full_image_names
         for row in filenames:
             csv_writer.writerow([row])
         f.close()
         print("test dataset list saved 'test_mrcnn.csv'")
-        evaluate(self.model, filenames, 1, testloader, device=self.device)
+        evaluate(self.model, filenames, testloader)
 
 def getTimestamp():
-    import time, datetime
     timezone = 60*60*9 # seconds * minutes * utc + 9
     utc_timestamp = int(time.time() + timezone)
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return date
+
 def compute_iou(cand_mask, gt_mask):
     gt_mask = gt_mask.bool().numpy()
     mask = cand_mask.bool().numpy()
@@ -50,16 +51,17 @@ def compute_iou(cand_mask, gt_mask):
 
     iou_score = np.sum(intersection) / np.sum(union)
     return iou_score
-def convert_mask_to_poly(mask):
-    if len(mask.shape) == 3:
-        mask = torch.squeeze(mask)
-    mask = mask.numpy()
-    coords = np.column_stack(np.where(mask > 0))
-    coords = coords.tolist()
-    return coords
+    
+# def convert_mask_to_poly(mask):
+#     if len(mask.shape) == 3:
+#         mask = torch.squeeze(mask)
+#     mask = mask.numpy()
+#     coords = np.column_stack(np.where(mask > 0))
+#     coords = coords.tolist()
+#     return coords
 
 import sys
-def evaluate(model, image_names, epoch, data_loader, device):
+def evaluate(model, image_names, data_loader):
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')    
     model.eval()
     model.to(device)
@@ -73,7 +75,7 @@ def evaluate(model, image_names, epoch, data_loader, device):
         with torch.no_grad():
             preds = model(images)
         images_names = [image_names[j] for j in range(batch_idx * len(images), (batch_idx+1) * len(images)) if j < len(image_names)]
-        for i, image in enumerate(images):
+        for i, (image, target) in enumerate(zip(images, targets)):
             pred = preds[i]
             masks = pred['masks'].detach().cpu()
             labels = pred['labels'].detach().cpu()
@@ -109,25 +111,31 @@ def evaluate(model, image_names, epoch, data_loader, device):
             
             
             for j, gt_mask in enumerate(gt_masks):
+                best_iou = -9999
+                best_idx = None
                 for k, mask in enumerate(masks):
                     iou = compute_iou(mask, gt_mask)
-                    logs[image_id][class_name]['gt_label'].append(class_name)
-                    logs[image_id][class_name]['label'].append(decode[labels[k].item()])
-                    logs[image_id][class_name]['conf'].append(float(scores[k]))
-                    logs[image_id][class_name]['iou'].append(iou)
+                    if iou > best_iou:
+                        best_iou = iou
+                        best_idx = k
 
-                    correct = gt_label == labels[k].item() if iou > 0.2 else False
+                logs[image_id][class_name]['gt_label'].append(class_name)
+                logs[image_id][class_name]['label'].append(decode[labels[best_idx].item()])
+                logs[image_id][class_name]['conf'].append(float(scores[best_idx]))
+                logs[image_id][class_name]['iou'].append(best_iou)
 
-                    logs[image_id][class_name]["correct"].append(correct)
-                    logs[image_id][class_name]["time"].append(getTimestamp())
+                correct = gt_label == labels[best_idx].item() if best_iou > 0.2 else False
 
-                    FP = (labels[k].item() == gt_label) == True and iou < 0.2
-                    FN = (labels[k].item() == gt_label) == False
-                    TP = (labels[k].item() == gt_label) == True and iou > 0.2
+                logs[image_id][class_name]["correct"].append(correct)
+                logs[image_id][class_name]["time"].append(getTimestamp())
 
-                    logs[image_name][class_name]["FP"].append(int(FP))
-                    logs[image_name][class_name]["FN"].append(int(FN))
-                    logs[image_name][class_name]["TP"].append(int(TP))
+                FP = (labels[best_idx].item() == gt_label) == True and iou < 0.2
+                FN = (labels[best_idx].item() == gt_label) == False
+                TP = (labels[best_idx].item() == gt_label) == True and iou > 0.2
+
+                logs[image_id][class_name]["FP"].append(int(FP))
+                logs[image_id][class_name]["FN"].append(int(FN))
+                logs[image_id][class_name]["TP"].append(int(TP))
 
                     
 
