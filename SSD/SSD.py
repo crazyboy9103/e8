@@ -274,22 +274,22 @@ class Model(Module):
     
     def fit(self, dataset, max_epochs):
         data_size = len(dataset)
-        n_train = int(data_size * 0.8)
-        n_valid = int(data_size * 0.9)
+        #n_train = int(data_size * 0.8)
+        #n_valid = int(data_size * 0.9)
         
-        split_idx = np.random.choice(data_size, data_size, replace=False)
+        #split_idx = np.random.choice(data_size, data_size, replace=False)
         
-        train_idx = split_idx[:n_train]
-        val_idx = split_idx[n_train:n_valid]
-        test_idx = split_idx[n_valid:]
+        #train_idx = split_idx[:n_train]
+        #val_idx = split_idx[n_train:n_valid]
+        #test_idx = split_idx[n_valid:]
         
-        trainset = torch.utils.data.Subset(dataset, train_idx)
-        valset = torch.utils.data.Subset(dataset, val_idx)
-        testset = torch.utils.data.Subset(dataset, test_idx) 
+        #trainset = torch.utils.data.Subset(dataset, train_idx)
+        #valset = torch.utils.data.Subset(dataset, val_idx)
+        #testset = torch.utils.data.Subset(dataset, test_idx) 
        
         
-        trainloader = DataLoader(dataset = trainset, batch_size=self.batch_size, shuffle=True, num_workers=8, collate_fn=collate_fn)
-        valloader = DataLoader(dataset = valset, batch_size=self.batch_size, shuffle=True, num_workers=8, collate_fn=collate_fn)
+        trainloader = DataLoader(dataset = dataset, batch_size=self.batch_size, shuffle=True, num_workers=4, collate_fn=collate_fn)
+        #valloader = DataLoader(dataset = valset, batch_size=self.batch_size, shuffle=True, num_workers=4, collate_fn=collate_fn)
         
 
 
@@ -298,12 +298,12 @@ class Model(Module):
             train_one_epoch(self.model, self.optimizer, trainloader, self.device, e, print_freq=100)
             
             if e % 5 == 0:
-                evaluate(self.model, e, valloader, device=self.device)
+                #evaluate(self.model, e, valloader, device=self.device)
                 self.save(e)
 
         
-        testloader = DataLoader(dataset = testset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
-        evaluate(self.model, e+1, testloader, device=self.device)
+        #testloader = DataLoader(dataset = testset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        #evaluate(self.model, e+1, testloader, device=self.device)
 
     def save(self, epoch):
         path = f"ssd_model_{epoch}.pt"

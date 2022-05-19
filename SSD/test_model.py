@@ -98,7 +98,7 @@ def evaluate(model, image_names, data_loader):
 import argparse
 parser = argparse.ArgumentParser(description='test')
 parser.add_argument('--data', default="ssd_data.pt", type=str, help="dataset.pt filename")
-parser.add_argument('--model', default="ssd_model_135.pt", type=str, help="ssd_model.pt filename")
+parser.add_argument('--model', default="ssd_model_140.pt", type=str, help="ssd_model.pt filename")
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
