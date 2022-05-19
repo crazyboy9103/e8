@@ -149,10 +149,10 @@ def evaluate(model, image_names, data_loader):
 import argparse
 parser = argparse.ArgumentParser(description='test')
 parser.add_argument('--data', default="mrcnn_data.pt", type=str, help="dataset.pt filename")
-parser.add_argument('--model', default="mrcnn_model_75.pt", type=str, help="mrcnn_model.pt filename")
+parser.add_argument('--model', default="mrcnn_model_85.pt", type=str, help="mrcnn_model.pt filename")
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
 dataset = CustomDataset("/dataset/48g_dataset", args.data)
-myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=8, parallel=False) # if there is no ckpt to load, pass model_name=None 
+myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=32, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)
