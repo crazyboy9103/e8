@@ -115,7 +115,7 @@ def write_to_excel(metrics):
 
         for class_name, stats in result.items():
             for i in range(len(stats['label'])):
-                analysis_result[class_name].append([image_name, stats["time"][i], stats["correct"][i], stats["gt_label"][i], stats["gt_bbox"][i], stats["label"][i], stats["bbox"][i], round(stats["conf"][i], 5), round(stats["iou"][i],2), stats["FP"][i], stats["FN"][i], stats["TP"][i]])
+                analysis_result[class_name].append([image_name, stats["time"][i], stats["correct"][i], stats["gt_label"][i], list(map(int, stats["gt_bbox"][i])), stats["label"][i], list(map(int, stats["bbox"][i])), round(stats["conf"][i], 5), round(stats["iou"][i],2), stats["FP"][i], stats["FN"][i], stats["TP"][i]])
 
     del logs
 
@@ -136,8 +136,8 @@ def write_to_excel(metrics):
         cum_FN = list(accumulate(FN))
         cum_FP = list(accumulate(FP))
     
-        recalls = [tp/(cum_TP[-1] + cum_FN[-1] + epsilon) for tp in cum_TP]
-        precisions = [tp/(cum_TP[-1] + cum_FP[-1] + epsilon) for tp in cum_TP]
+        recalls = [tp/(tp + fn + epsilon) for tp, fn in zip(cum_TP, cum_FN)]
+        precisions = [tp/(tp + fp + epsilon) for tp, fp in zip(cum_TP, cum_FP)]
         average_precisions = integrate.cumtrapz([1]+precisions, [0]+recalls)
         recalls = list(map(lambda x: round(x, 4), recalls))
         precisions = list(map(lambda x: round(x, 4), precisions))
