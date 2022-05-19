@@ -138,7 +138,7 @@ def write_to_excel(metrics):
         cum_FN = list(accumulate(FN))
         cum_FP = list(accumulate(FP))
     
-        recalls = [tp/(tp + fn + epsilon) for tp, fn in zip(cum_TP, cum_FN)]
+        recalls = [tp/(cum_TP[-1] + cum_FN[-1] + epsilon) for tp in cum_TP]
         precisions = [tp/(tp + fp + epsilon) for tp, fp in zip(cum_TP, cum_FP)]
         average_precisions = integrate.cumtrapz([1]+precisions, [0]+recalls)
         recalls = list(map(lambda x: round(x, 4), recalls))
