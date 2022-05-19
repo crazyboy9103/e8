@@ -59,38 +59,45 @@ def analysis(metrics):
             pred_label = stats['label']
             conf = stats['conf']
 
-            pred_bbox_tensor = torch.tensor(pred_bbox)
-            conf_tensor = torch.tensor(conf)
+            #pred_bbox_tensor = torch.tensor(pred_bbox)
+            #conf_tensor = torch.tensor(conf)
 
-            keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.1).tolist()
-            if len(keep_idx) > 3:
-                keep_idx = keep_idx[:3]
+            #keep_idx = torchvision.ops.nms(pred_bbox_tensor, conf_tensor, 0.1).tolist()
+            #if len(keep_idx) > 3:
+            #    keep_idx = keep_idx[:3]
             
-            pred_bbox = [pred_bbox[idx] for idx in keep_idx]
-            pred_label = [pred_label[idx] for idx in keep_idx]
-            conf = [conf[idx] for idx in keep_idx]
+            #pred_bbox = [pred_bbox[idx] for idx in keep_idx]
+            #pred_label = [pred_label[idx] for idx in keep_idx]
+            #conf = [conf[idx] for idx in keep_idx]
 
             
             for i in range(len(gt_bbox)):
+                best_iou = -99
+                best_idx = None
                 for j in range(len(pred_bbox)):
                     iou = compute_iou(gt_bbox[i], pred_bbox[j])
-                    logs[image_name][class_name]["gt_label"].append(gt_label[i])
-                    logs[image_name][class_name]["gt_bbox"].append(gt_bbox[i])
-                    logs[image_name][class_name]["label"].append(pred_label[j])
-                    logs[image_name][class_name]["bbox"].append(pred_bbox[j])
-                    logs[image_name][class_name]["conf"].append(conf[j])
-                    logs[image_name][class_name]["iou"].append(iou)
+                    if iou > best_iou:
+                        best_iou = iou
+                        best_idx = j
+                
+                assert best_idx
+                logs[image_name][class_name]["gt_label"].append(gt_label[i])
+                logs[image_name][class_name]["gt_bbox"].append(gt_bbox[i])
+                logs[image_name][class_name]["label"].append(pred_label[best_idx])
+                logs[image_name][class_name]["bbox"].append(pred_bbox[best_idx])
+                logs[image_name][class_name]["conf"].append(conf[best_idx])
+                logs[image_name][class_name]["iou"].append(best_iou)
 
-                    correct = pred_label[j] == gt_label[i] if iou > 0.5 else False
-                    logs[image_name][class_name]["correct"].append(correct)
-                    logs[image_name][class_name]["time"].append(getTimestamp())
-        
-                    FP = (pred_label[j] == gt_label[i]) == True and iou < 0.5
-                    FN = (pred_label[j] == gt_label[i]) == False
-                    TP = (pred_label[j] == gt_label[i]) == True and iou > 0.5
-                    logs[image_name][class_name]["FP"].append(int(FP))
-                    logs[image_name][class_name]["FN"].append(int(FN))
-                    logs[image_name][class_name]["TP"].append(int(TP))
+                correct = pred_label[best_idx] == gt_label[i] if best_iou > 0.5 else False
+                logs[image_name][class_name]["correct"].append(correct)
+                logs[image_name][class_name]["time"].append(getTimestamp())
+    
+                FP = (pred_label[best_idx] == gt_label[i]) == True and best_iou < 0.5
+                FN = (pred_label[best_idx] == gt_label[i]) == False
+                TP = (pred_label[best_idx] == gt_label[i]) == True and best_iou > 0.5
+                logs[image_name][class_name]["FP"].append(int(FP))
+                logs[image_name][class_name]["FN"].append(int(FN))
+                logs[image_name][class_name]["TP"].append(int(TP))
     return logs
 
 from itertools import accumulate
