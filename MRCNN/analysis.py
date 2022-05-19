@@ -42,6 +42,8 @@ mious = {}
 epsilon = 1e-6
 for label, result in tqdm(analysis_result.items(), desc="writing to excel"):
     # ws = worksheets[label]
+    ws.append([label])
+    ws.append(header)
     result = sorted(result, key=lambda x: x[5], reverse=True)
     ious = [item[-4] for item in result]
     mean_iou = sum(ious)/len(ious)
