@@ -129,9 +129,9 @@ def evaluate(model, image_names, data_loader):
                 logs[image_id][class_name]["correct"].append(correct)
                 logs[image_id][class_name]["time"].append(getTimestamp())
 
-                FP = (labels[best_idx].item() == gt_label) == True and iou < 0.2
+                FP = (labels[best_idx].item() == gt_label) == True and best_iou < 0.2
                 FN = (labels[best_idx].item() == gt_label) == False
-                TP = (labels[best_idx].item() == gt_label) == True and iou > 0.2
+                TP = (labels[best_idx].item() == gt_label) == True and best_iou > 0.2
 
                 logs[image_id][class_name]["FP"].append(int(FP))
                 logs[image_id][class_name]["FN"].append(int(FN))
