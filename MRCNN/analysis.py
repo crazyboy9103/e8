@@ -19,13 +19,13 @@ labels = json.load(open("labels.json", "r"))
 labels = list(labels.keys())
 # Open workbook
 wb = Workbook(write_only=True)
-
-worksheets = {}
+ws = wb.create_sheet("MRCNN")
+# worksheets = {}
 header = ["image_name", "time", "correct", "gt_label", "label", "conf", "iou", "cum_TP", "cum_FN", "cum_FP", "recall", "precision", "average_precision", "AP", "avg_iou"]
-for label in labels:
-    ws = wb.create_sheet(label)
-    worksheets[label] = ws
-    ws.append(header)
+# for label in labels:
+#     ws = wb.create_sheet(label)
+#     worksheets[label] = ws
+#     ws.append(header)
 
 
 analysis_result = {label: [] for label in labels}
@@ -42,7 +42,7 @@ mious = {}
 
 epsilon = 1e-6
 for label, result in tqdm(analysis_result.items(), desc="writing to excel"):
-    ws = worksheets[label]
+    # ws = worksheets[label]
     result = sorted(result, key=lambda x: x[5], reverse=True)
     ious = [item[-4] for item in result]
     mean_iou = sum(ious)/len(ious)
@@ -73,8 +73,9 @@ for label, result in tqdm(analysis_result.items(), desc="writing to excel"):
         line = list(map(str, line))
         ws.append(line)
 
-ws = wb.create_sheet("Stats")
-ws.append(["Class", "AP", "average IoU", "mAP", "mIoU"])
+# ws = wb.create_sheet("Stats")
+ws.append(["Stats"])
+ws.append(["Class", "AP", "mIoU", "Final_mAP", "Final_mIoU"])
 for i, label in enumerate(labels):
     AP = APs[label]
     miou = mious[label]

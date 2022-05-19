@@ -108,13 +108,14 @@ def write_to_excel(metrics):
     labels = list(labels.keys())
     wb = Workbook(write_only=True)
 
-    worksheets = {}
+    ws = wb.create_sheet("SSD")
+    # worksheets = {}
     
     header = ["image_name", "time", "correct", "gt_label", "gt_bbox", "label", "bbox", "conf", "iou", "cum_TP", "cum_FN", "cum_FP", "recall", "precision", "average_precision", "AP", "avg_iou"]
-    for label in labels:
-        ws = wb.create_sheet(label)
-        worksheets[label] = ws
-        ws.append(header)
+    # for label in labels:
+    #     ws = wb.create_sheet(label)
+    #     worksheets[label] = ws
+    #     ws.append(header)
 
     analysis_result = {label: [] for label in labels}
     logs = analysis(metrics)
@@ -133,7 +134,9 @@ def write_to_excel(metrics):
     
     epsilon = 1e-6
     for label, result in tqdm(analysis_result.items(), desc="writing to excel"):
-        ws = worksheets[label]
+        # ws = worksheets[label]
+        ws.append([label])
+        ws.append(header)
         result = sorted(result, key=lambda x: x[7], reverse=True)
         ious = [item[-4] for item in result]
         mean_iou = sum(ious)/len(ious)
@@ -160,7 +163,8 @@ def write_to_excel(metrics):
             line = list(map(str, line))
             ws.append(line)
     
-    ws = wb.create_sheet("Stats")
+    # ws = wb.create_sheet("Stats")
+    ws.append(["Stats"])
     ws.append(["Class", "AP", "mIoU", "Final_mAP", "Final_mIoU"])
     for i, label in tqdm(enumerate(labels), desc="total stats"):
         AP = APs[label]
