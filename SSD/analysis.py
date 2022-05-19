@@ -2,8 +2,6 @@ import numpy as np
 import json
 from tqdm import tqdm
 import time, datetime
-import torchvision
-import torch
 
 def getTimestamp():
     timezone=60*60*9

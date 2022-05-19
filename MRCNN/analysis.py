@@ -3,7 +3,6 @@ import json
 from tqdm import tqdm
 from sklearn.metrics import average_precision_score
 from openpyxl import Workbook
-import time, datetime
 from itertools import accumulate
 from scipy import integrate
 
