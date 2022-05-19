@@ -102,7 +102,7 @@ with torch.no_grad():
         stats_by_class[temp_label]["total"] += 1
         stats_by_class[temp_label]["correct"] += int(is_correct)
  
-        logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "time": getTimestamp(), "class_stats":{}, "final_stats":{}}
+        logs[path] = {"predict":temp_predict, "label": temp_label, "is_correct": is_correct, "time": getTimestamp(),  "class_stats":{}, "final_stats":{}}
         logs[path]["cumul_correct"] = stats_by_class[temp_label]["correct"]
         logs[path]["cumul_total"] = stats_by_class[temp_label]["total"]
 
@@ -170,7 +170,7 @@ def write_to_excel(logs):
     ws.append([n_tn, n_fp, n_fn, n_tp, n_acc, n_f1])
     ws.append([model_name+"faulty_tn", model_name+"faulty_fp", model_name+"faulty_fn", model_name+"faulty_tp", model_name+"faulty_acc", model_name+"faulty_f1"])
     ws.append([f_tn, f_fp, f_fn, f_tp, f_acc, f_f1])
-    ws.append(["image_name", "predict", "label", "correct", "time", "cumul_correct", "cumul_total", "", "Class", "Accuracy", "F1", "", "Final mean Acc", "mean F1"])
+    ws.append(["image_name", "predict", "label", "cumul_correct", "cumul_total", "", "Class", "Accuracy", "F1", "", "Final mean Acc", "mean F1"])
 
     analysis_result = []
     for key, value in logs.items():
@@ -178,7 +178,7 @@ def write_to_excel(logs):
             img_name = key
 
             try:
-                analysis_result.append([img_name,str(value["predict"]),str(value["label"]),str(value["is_correct"]), str(value["time"]),str(value["cumul_correct"]),str(value["cumul_total"])])
+                analysis_result.append([img_name,str(value["predict"]),str(value["label"]),str(value["cumul_correct"]),str(value["cumul_total"])])
 
             except:
                 continue
@@ -227,12 +227,12 @@ for path in path_list:
             best_data.append(data)
 
     for idx, row in enumerate(result[6:]):
-        log_data.append(row[:7])
+        log_data.append(row[:5])
         if idx in [1]:
-            f1_data.append(row[12:])
+            f1_data.append(row[10:])
         if idx in [1, 2 ,3]:
             data = [model]
-            data.extend(row[8:11])
+            data.extend(row[6:9])
             class_data.append(data)
 
 acc = 0
