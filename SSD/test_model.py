@@ -14,18 +14,18 @@ from sklearn.metrics import average_precision_score, confusion_matrix
 import csv
 class MyModel(Model):
     def test(self, dataset):
-        if "test_idx.npy" not in os.listdir():
-            test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
-            np.save("test_idx.npy", test_idx)
-        else:
-            test_idx = np.load("test_idx.npy")
+        #if "test_idx.npy" not in os.listdir():
+        #    test_idx = np.random.choice(len(dataset), len(dataset)//10, replace=False)
+        #    np.save("test_idx.npy", test_idx)
+        #else:
+        #    test_idx = np.load("test_idx.npy")
 
-        test_set = torch.utils.data.Subset(dataset, test_idx)
-        f = open("test_ssd.csv", "w", newline='')
+        #test_set = torch.utils.data.Subset(dataset, test_idx)
+        f = open("test_ssd.csv", "w", newline='', encoding="utf-8-sig")
         csv_writer = csv.writer(f)
-        testloader = DataLoader(dataset = test_set, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
+        testloader = DataLoader(dataset = dataset, batch_size=self.batch_size, shuffle=False, num_workers=8, collate_fn=collate_fn)
         full_image_names = dataset.images
-        filenames = [full_image_names[idx] for idx in test_idx]
+        filenames = full_image_names#[full_image_names[idx] for idx in test_idx]
         for row in filenames:
             csv_writer.writerow([row])
         f.close()
@@ -98,10 +98,10 @@ def evaluate(model, image_names, data_loader):
 import argparse
 parser = argparse.ArgumentParser(description='test')
 parser.add_argument('--data', default="ssd_data.pt", type=str, help="dataset.pt filename")
-parser.add_argument('--model', default="ssd_model_110.pt", type=str, help="ssd_model.pt filename")
+parser.add_argument('--model', default="ssd_model_135.pt", type=str, help="ssd_model.pt filename")
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     
-dataset = CustomDataset("/dataset/data_1230", args.data)
+dataset = CustomDataset("/dataset/48g_dataset", args.data)
 myModel = MyModel(num_classes=dataset.num_classes, device = device, model_name = args.model, batch_size=128, parallel=False) # if there is no ckpt to load, pass model_name=None 
 myModel.test(dataset)
