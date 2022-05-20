@@ -110,7 +110,6 @@ with torch.no_grad():
 
 logs["end"] = getTimestamp()
 
-#json.dump(logs, open("detailed_metrics.json", "w"))
 from openpyxl import Workbook
 from sklearn.metrics import multilabel_confusion_matrix as mcm
 from itertools import accumulate
@@ -210,100 +209,4 @@ def write_to_json(logs):
     json_filename = model_name + "_eval.json"
     json.dump(model_result, open(json_filename, "w"))
 
-    # ws.append([model_name+"best_tn", model_name+"best_fp", model_name+"best_fn", model_name+"best_tp", model_name+"best_acc", model_name+"best_f1"])
-    # ws.append([b_tn, b_fp, b_fn, b_tp, b_acc, b_f1])
-    # ws.append([model_name+"normal_tn", model_name+"normal_fp", model_name+"normal_fn", model_name+"normal_tp", model_name+"normal_acc", model_name+"normal_f1"])
-    # ws.append([n_tn, n_fp, n_fn, n_tp, n_acc, n_f1])
-    # ws.append([model_name+"faulty_tn", model_name+"faulty_fp", model_name+"faulty_fn", model_name+"faulty_tp", model_name+"faulty_acc", model_name+"faulty_f1"])
-    # ws.append([f_tn, f_fp, f_fn, f_tp, f_acc, f_f1])
-    # ws.append(["image_name", "predict", "label", "correct", "time", "cumul_correct", "cumul_total", "", "Class", "Accuracy", "F1", "", "Final mean Acc", "mean F1"])
-
-    # analysis_result = []
-    # for key, value in logs.items():
-    #     if key not in ["final_stats", "end", "start", "class_stats"]:
-    #         img_name = key
-
-    #         try:
-    #             analysis_result.append([img_name,str(value["predict"]),str(value["label"]),str(value["is_correct"]), str(value["time"]),str(value["cumul_correct"]),str(value["cumul_total"])])
-
-    #         except:
-    #             continue
-
-    # model_name = args.model.strip(".pt")
-
-    # print(f"Eval started : {logs['start']}, Eval ended : {logs['end']}")
-    # for i in range(3):
-    #     print(f"Class {dataset.classes[i]}, Accuracy: {logs['class_stats'][dataset.classes[i]]['acc']}, F1: {logs['class_stats'][dataset.classes[i]]['f1']}")
-    #     analysis_result[i].extend(["", model_name+dataset.classes[i], logs['class_stats'][dataset.classes[i]]['acc'], logs['class_stats'][dataset.classes[i]]['f1']])
-
-    # print(f"Final mean Acc : {logs['final_stats']['mean_acc']}, mean F1 : {logs['final_stats']['mean_f1']}")
-    # analysis_result[0].extend(["", logs['final_stats']['mean_acc'], logs['final_stats']['mean_f1']])
-
-    # for row in analysis_result:
-    #     ws.append(row)
-    # wb.save(model_name+"_test.xlsx")
-    # print(model_name+"_test.xlsx saved")
-
 write_to_json(logs)
-
-# import openpyxl
-# file_list = ["eff_net_eff_net_window_test", "eff_net_eff_net_rebar_test", "eff_net_eff_net_peel_test", "eff_net_eff_net_living_test", "eff_net_eff_net_ground_test", "eff_net_eff_net_finish_test", "eff_net_eff_net_crack_test"]
-# path_list = [i+".xlsx" for i in file_list]
-# best_data = []
-# log_data = []
-# class_data = [['model', 'Class', 'Accuracy', 'F1']]
-# f1_data = [] # 평균 계산을 위한 컬럼명 제외
-
-# for path in path_list:
-#     model = path.split("/")[-1].split(".")[0].replace("eff_net_eff_net_", "")
-#     wb = openpyxl.load_workbook(path)
-#     ws = wb['Sheet']
-#     result = []
-#     for row in ws.iter_rows(ws.min_row, ws.max_row, values_only =True):
-#         result.append(list(row))
-
-#     for idx, row in enumerate(result[0:6]):
-#         if idx == 0:
-#             column_name = ["model"]
-#             column_name.extend(row[0:6])
-#             best_data.append(column_name)
-#         else:
-#             data = [model]
-#             data.extend(row[0:6])
-#             best_data.append(data)
-
-#     for idx, row in enumerate(result[6:]):
-#         log_data.append(row[:7])
-#         if idx in [1]:
-#             f1_data.append(row[12:])
-#         if idx in [1, 2 ,3]:
-#             data = [model]
-#             data.extend(row[8:11])
-#             class_data.append(data)
-
-# acc = 0
-# f1 = 0
-# for row in f1_data:
-#     acc += row[0]
-#     f1 += row[1]
-
-# for idx, row in enumerate(best_data):
-#     data = [""]
-#     data.extend(row)
-#     log_data[idx].extend(data)
-
-# for idx, row in enumerate(class_data):
-#     data = [""]
-#     data.extend(row)
-#     log_data[idx].extend(data)
-
-# f1_average = [["", "Final mean Acc", "mean F1"],["", acc/len(file_list), f1/len(file_list)]]
-# for idx, row in enumerate(f1_average):
-#     log_data[idx].extend(row)
-
-# from openpyxl import Workbook
-# wb = Workbook()
-# ws = wb.active
-# for row in log_data:
-#     ws.append(row)
-# wb.save("eff_net_result_test.xlsx")
