@@ -123,7 +123,7 @@ def write_to_json(logs):
 
     labels = []
     preds = []
-
+    temp = False
     for key, item in logs.items():
         if key not in ["start", "end"]:
             image_names = item["image_names"]
@@ -153,14 +153,21 @@ def write_to_json(logs):
             model_result["image_names"].extend(image_names)
             model_result["gt_labels"].extend(gt_labels)
             model_result["pred_labels"].extend(pred_labels)
-            print("pred_label", type(pred_labels[0]))
+            
             model_result["times"].extend(times)
             model_result["totals"].extend(totals)
-            print("totals", type(totals[0]))
+            
             model_result["corrects"].extend(corrects)
-            print("corrects", type(corrects[0]))
+            
             model_result["cum_corrects"].extend(cum_corrects)
-            print("cum_corrects", type(cum_corrects[0]))
+            if not temp:
+                temp = True
+                print("gt_labels", type(gt_labels[0]))
+                print("times", type(times[0]))
+                print("pred_label", type(pred_labels[0]))
+                print("totals", type(totals[0]))
+                print("corrects", type(corrects[0]))
+                print("cum_corrects", type(cum_corrects[0]))
         else:
             if key == "start":
                 model_result["eval_start"] = item
@@ -207,6 +214,8 @@ def write_to_json(logs):
 
     model_name = args.model.strip(".pt")
     json_filename = model_name + "_eval.json"
-    json.dump(model_result, open(json_filename, "w"))
+
+    with open(json_filename, "w") as f:
+        json.dump(model_result, f)
 
 write_to_json(logs)
