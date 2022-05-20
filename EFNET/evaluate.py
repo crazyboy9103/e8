@@ -123,7 +123,6 @@ def write_to_json(logs):
 
     labels = []
     preds = []
-    temp = False
     for key, item in logs.items():
         if key not in ["start", "end"]:
             image_names = item["image_names"]
@@ -160,14 +159,7 @@ def write_to_json(logs):
             model_result["corrects"].extend(corrects)
             
             model_result["cum_corrects"].extend(cum_corrects)
-            if not temp:
-                temp = True
-                print("gt_labels", type(gt_labels[0]))
-                print("times", type(times[0]))
-                print("pred_label", type(pred_labels[0]))
-                print("totals", type(totals[0]))
-                print("corrects", type(corrects[0]))
-                print("cum_corrects", type(cum_corrects[0]))
+
         else:
             if key == "start":
                 model_result["eval_start"] = item
@@ -203,14 +195,18 @@ def write_to_json(logs):
         for j, c in enumerate(["tn", "fp", "fn", "tp", "prec", "recall", "f1", "acc"]):
             value = stats[i][j]
             key = label + "_" + c
+            
+        
+            if j <= 3:
+                value = int(value)
+            else:
+                value = float(value)
             model_result[key] = value
-            print("key", type(value))
     
     avg_f1, avg_acc = (b_f1 + n_f1 + f_f1) / 3, (b_acc + n_acc + f_acc) / 3
-    print("avg_f1", type(avg_f1))
-    print("avg_acc", type(avg_acc))
-    model_result["avg_f1"] = avg_f1
-    model_result["avg_acc"] = avg_acc
+
+    model_result["avg_f1"] = float(avg_f1)
+    model_result["avg_acc"] = float(avg_acc)
 
     model_name = args.model.strip(".pt")
     json_filename = model_name + "_eval.json"
