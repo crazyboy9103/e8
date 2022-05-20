@@ -154,11 +154,14 @@ def write_to_json(logs):
             model_result["image_names"].extend(image_names)
             model_result["gt_labels"].extend(gt_labels)
             model_result["pred_labels"].extend(pred_labels)
+            print("pred_label", type(pred_labels[0]))
             model_result["times"].extend(times)
             model_result["totals"].extend(totals)
+            print("totals", type(totals[0]))
             model_result["corrects"].extend(corrects)
+            print("corrects", type(corrects[0]))
             model_result["cum_corrects"].extend(cum_corrects)
-
+            print("cum_corrects", type(cum_corrects[0]))
         else:
             if key == "start":
                 model_result["eval_start"] = item
@@ -195,9 +198,13 @@ def write_to_json(logs):
             value = stats[i][j]
             key = label + "_" + c
             model_result[key] = value
+            print("key", type(value))
     
-    model_result["avg_f1"] = (b_f1 + n_f1 + f_f1) / 3
-    model_result["avg_acc"] = (b_acc + n_acc + f_acc) / 3
+    avg_f1, avg_acc = (b_f1 + n_f1 + f_f1) / 3, (b_acc + n_acc + f_acc) / 3
+    print("avg_f1", type(avg_f1))
+    print("avg_acc", type(avg_acc))
+    model_result["avg_f1"] = avg_f1
+    model_result["avg_acc"] = avg_acc
 
     model_name = args.model.strip(".pt")
     json_filename = model_name + "_eval.json"
