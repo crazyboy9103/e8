@@ -1,6 +1,0 @@
-*/*.pt
-*/*.csv
-*/__pycache__/
-pt/
-*.jpg
-detailed_metrics.json

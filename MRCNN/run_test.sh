@@ -1,1 +1,0 @@
-python3 test_model.py && python3 analysis.py

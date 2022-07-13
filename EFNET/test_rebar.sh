@@ -1,1 +1,0 @@
-python3 evaluate.py --dataset ./dataset/rebar --model eff_net_rebar.pt

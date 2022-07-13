@@ -1,1 +1,0 @@
-python3 evaluate.py --dataset ./dataset/living --model eff_net_living.pt

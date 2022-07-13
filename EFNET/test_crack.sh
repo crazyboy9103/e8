@@ -1,1 +1,0 @@
-python3 evaluate.py --dataset ./dataset/crack --model eff_net_crack.pt
