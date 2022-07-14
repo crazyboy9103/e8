@@ -1,0 +1,1 @@
+python3 train.py --dataset ./dataset/window --model eff_net_window.pt

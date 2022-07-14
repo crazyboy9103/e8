@@ -1,0 +1,1 @@
+python3 train.py --dataset ./dataset/rebar --model eff_net_rebar.pt

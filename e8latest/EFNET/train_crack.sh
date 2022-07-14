@@ -1,0 +1,1 @@
+python3 train.py --dataset ./dataset/crack --model eff_net_crack.pt
