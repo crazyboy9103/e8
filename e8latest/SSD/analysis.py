@@ -172,6 +172,15 @@ def write_to_excel(metrics):
             line = line + [sum(APs.values())/len(APs), sum(mious.values())/len(mious)]
         line = list(map(str, line))
         ws.append(line) 
+    
+    # ADDED: read from ssd_nopred.csv and add entries
+    ws.append(["Omitted"])
+    curfile = open("ssd_nopred.csv", "r")
+    lines = curfile.readlines()
+    curfile.close()
+    for line in lines:
+        ws.append(line)
+    
     print("Saving test.xlsx")
     wb.save("test.xlsx")
     wb.close()

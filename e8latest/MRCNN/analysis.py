@@ -86,6 +86,15 @@ for i, label in enumerate(labels):
     line = list(map(str, line))
     ws.append(line) 
 
+# ADDED: read from ssd_nopred.csv and add entries
+ws.append(["Omitted"])
+curfile = open("mrcnn_nopred.csv", "r")
+lines = curfile.readlines()
+curfile.close()
+for line in lines:
+    ws.append(line)
+
+
 print("Saving mrcnn_test.xlsx")
 wb.save("mrcnn_test.xlsx")
 wb.close()
