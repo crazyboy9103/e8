@@ -38,6 +38,11 @@ def getTimestamp():
     utc_timestamp = int(time.time() + timezone)
     date = datetime.datetime.fromtimestamp(utc_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     return date
+
+# ADDED : write image names with no prediction
+no_pred_file = open("ssd_nopred.csv", "a", newline='\n', encoding="utf-8-sig")
+no_pred_writer = csv.writer(no_pred_file)
+
 def evaluate(model, image_names, data_loader):
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')    
     model.eval()
@@ -58,6 +63,8 @@ def evaluate(model, image_names, data_loader):
             image_id = images_names[i]
 
             if len(labels) == 0: # if no label, nothing to evaluate	
+                # ADDED : write image names with no prediction
+                no_pred_writer.writerow([image_id])
                 continue	
 
             if image_id not in logs:
